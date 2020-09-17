@@ -10,6 +10,7 @@ require (
 	github.com/gorilla/websocket v1.2.0
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
+	github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server v0.0.0-20200906141145-d52344625cda
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.6.0
 	github.com/tidwall/sjson v1.1.1

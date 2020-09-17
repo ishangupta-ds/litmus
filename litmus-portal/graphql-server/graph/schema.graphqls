@@ -162,6 +162,23 @@ type ScheduledWorkflows {
 	cluster_type: String!
 }
 
+type ScheduledWorkflowsRunDetails {
+	workflow_id: String!
+	workflow_manifest: String!
+	cronSyntax: String!
+	cluster_name: String!
+	workflow_name: String!
+	workflow_description: String!
+	weightages: [weightages!]!
+	isCustomWorkflow: Boolean!
+	updated_at: String!
+	created_at: String!
+	project_id: ID!
+	cluster_id: ID!
+	cluster_type: String!
+  workflow_runs: [WorkflowRun!]!
+}
+
 type Query{
   getWorkFlowRuns(project_id: String!): [WorkflowRun!]! @authorized
 
@@ -174,6 +191,8 @@ type Query{
   users: [User!]! @authorized
 
   getScheduledWorkflows(project_id: String!): [ScheduledWorkflows]! @authorized
+
+  getScheduledWorkflowsRunDetails(schedule_ids: [String!]!): [ScheduledWorkflowsRunDetails]! @authorized
 }
 
 type Mutation{

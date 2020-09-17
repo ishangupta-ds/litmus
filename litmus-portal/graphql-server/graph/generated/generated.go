@@ -14,6 +14,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	model1 "github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model"
 	"github.com/litmuschaos/litmus/litmus-portal/graphql-server/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -37,9 +38,11 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Member() MemberResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
+	WorkflowRun() WorkflowRunResolver
 }
 
 type DirectiveRoot struct {
@@ -108,17 +111,17 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AcceptInvitation    func(childComplexity int, member model.MemberInput) int
-		ChaosWorkflowRun    func(childComplexity int, workflowData model.WorkflowRunInput) int
-		ClusterConfirm      func(childComplexity int, identity model.ClusterIdentity) int
-		CreateChaosWorkFlow func(childComplexity int, input model.ChaosWorkFlowInput) int
+		ChaosWorkflowRun    func(childComplexity int, workflowData model1.WorkflowRunInput) int
+		ClusterConfirm      func(childComplexity int, identity model1.ClusterIdentity) int
+		CreateChaosWorkFlow func(childComplexity int, input model1.ChaosWorkFlowInput) int
 		CreateUser          func(childComplexity int, user model.CreateUserInput) int
 		DeclineInvitation   func(childComplexity int, member model.MemberInput) int
 		DeleteChaosWorkflow func(childComplexity int, workflowid string) int
-		NewClusterEvent     func(childComplexity int, clusterEvent model.ClusterEventInput) int
-		PodLog              func(childComplexity int, log model.PodLog) int
+		NewClusterEvent     func(childComplexity int, clusterEvent model1.ClusterEventInput) int
+		PodLog              func(childComplexity int, log model1.PodLog) int
 		SendInvitation      func(childComplexity int, member model.MemberInput) int
 		UpdateUser          func(childComplexity int, user model.UpdateUserInput) int
-		UserClusterReg      func(childComplexity int, clusterInput model.ClusterInput) int
+		UserClusterReg      func(childComplexity int, clusterInput model1.ClusterInput) int
 	}
 
 	PodLogResponse struct {
@@ -139,12 +142,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetCluster            func(childComplexity int, projectID string, clusterType *string) int
-		GetProject            func(childComplexity int, projectID string) int
-		GetScheduledWorkflows func(childComplexity int, projectID string) int
-		GetUser               func(childComplexity int, username string) int
-		GetWorkFlowRuns       func(childComplexity int, projectID string) int
-		Users                 func(childComplexity int) int
+		GetCluster                      func(childComplexity int, projectID string, clusterType *string) int
+		GetProject                      func(childComplexity int, projectID string) int
+		GetScheduledWorkflows           func(childComplexity int, projectID string) int
+		GetScheduledWorkflowsRunDetails func(childComplexity int, scheduleIds []string) int
+		GetUser                         func(childComplexity int, username string) int
+		GetWorkFlowRuns                 func(childComplexity int, projectID string) int
+		Users                           func(childComplexity int) int
 	}
 
 	ScheduledWorkflows struct {
@@ -163,10 +167,27 @@ type ComplexityRoot struct {
 		WorkflowName        func(childComplexity int) int
 	}
 
+	ScheduledWorkflowsRunDetails struct {
+		ClusterID           func(childComplexity int) int
+		ClusterName         func(childComplexity int) int
+		ClusterType         func(childComplexity int) int
+		CreatedAt           func(childComplexity int) int
+		CronSyntax          func(childComplexity int) int
+		IsCustomWorkflow    func(childComplexity int) int
+		ProjectID           func(childComplexity int) int
+		UpdatedAt           func(childComplexity int) int
+		Weightages          func(childComplexity int) int
+		WorkflowDescription func(childComplexity int) int
+		WorkflowID          func(childComplexity int) int
+		WorkflowManifest    func(childComplexity int) int
+		WorkflowName        func(childComplexity int) int
+		WorkflowRuns        func(childComplexity int) int
+	}
+
 	Subscription struct {
-		ClusterConnect        func(childComplexity int, clusterInfo model.ClusterIdentity) int
+		ClusterConnect        func(childComplexity int, clusterInfo model1.ClusterIdentity) int
 		ClusterEventListener  func(childComplexity int, projectID string) int
-		GetPodLog             func(childComplexity int, podDetails model.PodLogRequest) int
+		GetPodLog             func(childComplexity int, podDetails model1.PodLogRequest) int
 		WorkflowEventListener func(childComplexity int, projectID string) int
 	}
 
@@ -203,33 +224,44 @@ type ComplexityRoot struct {
 	}
 }
 
+type MemberResolver interface {
+	Name(ctx context.Context, obj *model1.Member) (string, error)
+	Email(ctx context.Context, obj *model1.Member) (string, error)
+	Role(ctx context.Context, obj *model1.Member) (model.MemberRole, error)
+
+	JoinedAt(ctx context.Context, obj *model1.Member) (string, error)
+}
 type MutationResolver interface {
-	UserClusterReg(ctx context.Context, clusterInput model.ClusterInput) (string, error)
-	CreateChaosWorkFlow(ctx context.Context, input model.ChaosWorkFlowInput) (*model.ChaosWorkFlowResponse, error)
-	CreateUser(ctx context.Context, user model.CreateUserInput) (*model.User, error)
+	UserClusterReg(ctx context.Context, clusterInput model1.ClusterInput) (string, error)
+	CreateChaosWorkFlow(ctx context.Context, input model1.ChaosWorkFlowInput) (*model1.ChaosWorkFlowResponse, error)
+	CreateUser(ctx context.Context, user model.CreateUserInput) (*model1.User, error)
 	UpdateUser(ctx context.Context, user model.UpdateUserInput) (string, error)
 	DeleteChaosWorkflow(ctx context.Context, workflowid string) (bool, error)
-	SendInvitation(ctx context.Context, member model.MemberInput) (*model.Member, error)
+	SendInvitation(ctx context.Context, member model.MemberInput) (*model1.Member, error)
 	AcceptInvitation(ctx context.Context, member model.MemberInput) (string, error)
 	DeclineInvitation(ctx context.Context, member model.MemberInput) (string, error)
-	ClusterConfirm(ctx context.Context, identity model.ClusterIdentity) (*model.ClusterConfirmResponse, error)
-	NewClusterEvent(ctx context.Context, clusterEvent model.ClusterEventInput) (string, error)
-	ChaosWorkflowRun(ctx context.Context, workflowData model.WorkflowRunInput) (string, error)
-	PodLog(ctx context.Context, log model.PodLog) (string, error)
+	ClusterConfirm(ctx context.Context, identity model1.ClusterIdentity) (*model1.ClusterConfirmResponse, error)
+	NewClusterEvent(ctx context.Context, clusterEvent model1.ClusterEventInput) (string, error)
+	ChaosWorkflowRun(ctx context.Context, workflowData model1.WorkflowRunInput) (string, error)
+	PodLog(ctx context.Context, log model1.PodLog) (string, error)
 }
 type QueryResolver interface {
-	GetWorkFlowRuns(ctx context.Context, projectID string) ([]*model.WorkflowRun, error)
-	GetCluster(ctx context.Context, projectID string, clusterType *string) ([]*model.Cluster, error)
-	GetUser(ctx context.Context, username string) (*model.User, error)
-	GetProject(ctx context.Context, projectID string) (*model.Project, error)
-	Users(ctx context.Context) ([]*model.User, error)
+	GetWorkFlowRuns(ctx context.Context, projectID string) ([]*model1.WorkflowRun, error)
+	GetCluster(ctx context.Context, projectID string, clusterType *string) ([]*model1.Cluster, error)
+	GetUser(ctx context.Context, username string) (*model1.User, error)
+	GetProject(ctx context.Context, projectID string) (*model1.Project, error)
+	Users(ctx context.Context) ([]*model1.User, error)
 	GetScheduledWorkflows(ctx context.Context, projectID string) ([]*model.ScheduledWorkflows, error)
+	GetScheduledWorkflowsRunDetails(ctx context.Context, scheduleIds []string) ([]*model.ScheduledWorkflowsRunDetails, error)
 }
 type SubscriptionResolver interface {
-	ClusterEventListener(ctx context.Context, projectID string) (<-chan *model.ClusterEvent, error)
-	WorkflowEventListener(ctx context.Context, projectID string) (<-chan *model.WorkflowRun, error)
-	GetPodLog(ctx context.Context, podDetails model.PodLogRequest) (<-chan *model.PodLogResponse, error)
-	ClusterConnect(ctx context.Context, clusterInfo model.ClusterIdentity) (<-chan *model.ClusterAction, error)
+	ClusterEventListener(ctx context.Context, projectID string) (<-chan *model1.ClusterEvent, error)
+	WorkflowEventListener(ctx context.Context, projectID string) (<-chan *model1.WorkflowRun, error)
+	GetPodLog(ctx context.Context, podDetails model1.PodLogRequest) (<-chan *model1.PodLogResponse, error)
+	ClusterConnect(ctx context.Context, clusterInfo model1.ClusterIdentity) (<-chan *model1.ClusterAction, error)
+}
+type WorkflowRunResolver interface {
+	ClusterType(ctx context.Context, obj *model1.WorkflowRun) (*string, error)
 }
 
 type executableSchema struct {
@@ -535,7 +567,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ChaosWorkflowRun(childComplexity, args["workflowData"].(model.WorkflowRunInput)), true
+		return e.complexity.Mutation.ChaosWorkflowRun(childComplexity, args["workflowData"].(model1.WorkflowRunInput)), true
 
 	case "Mutation.clusterConfirm":
 		if e.complexity.Mutation.ClusterConfirm == nil {
@@ -547,7 +579,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ClusterConfirm(childComplexity, args["identity"].(model.ClusterIdentity)), true
+		return e.complexity.Mutation.ClusterConfirm(childComplexity, args["identity"].(model1.ClusterIdentity)), true
 
 	case "Mutation.createChaosWorkFlow":
 		if e.complexity.Mutation.CreateChaosWorkFlow == nil {
@@ -559,7 +591,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateChaosWorkFlow(childComplexity, args["input"].(model.ChaosWorkFlowInput)), true
+		return e.complexity.Mutation.CreateChaosWorkFlow(childComplexity, args["input"].(model1.ChaosWorkFlowInput)), true
 
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -607,7 +639,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.NewClusterEvent(childComplexity, args["clusterEvent"].(model.ClusterEventInput)), true
+		return e.complexity.Mutation.NewClusterEvent(childComplexity, args["clusterEvent"].(model1.ClusterEventInput)), true
 
 	case "Mutation.podLog":
 		if e.complexity.Mutation.PodLog == nil {
@@ -619,7 +651,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.PodLog(childComplexity, args["log"].(model.PodLog)), true
+		return e.complexity.Mutation.PodLog(childComplexity, args["log"].(model1.PodLog)), true
 
 	case "Mutation.sendInvitation":
 		if e.complexity.Mutation.SendInvitation == nil {
@@ -655,7 +687,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UserClusterReg(childComplexity, args["clusterInput"].(model.ClusterInput)), true
+		return e.complexity.Mutation.UserClusterReg(childComplexity, args["clusterInput"].(model1.ClusterInput)), true
 
 	case "PodLogResponse.log":
 		if e.complexity.PodLogResponse.Log == nil {
@@ -769,6 +801,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetScheduledWorkflows(childComplexity, args["project_id"].(string)), true
+
+	case "Query.getScheduledWorkflowsRunDetails":
+		if e.complexity.Query.GetScheduledWorkflowsRunDetails == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getScheduledWorkflowsRunDetails_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetScheduledWorkflowsRunDetails(childComplexity, args["schedule_ids"].([]string)), true
 
 	case "Query.getUser":
 		if e.complexity.Query.GetUser == nil {
@@ -892,6 +936,104 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ScheduledWorkflows.WorkflowName(childComplexity), true
 
+	case "ScheduledWorkflowsRunDetails.cluster_id":
+		if e.complexity.ScheduledWorkflowsRunDetails.ClusterID == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.ClusterID(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.cluster_name":
+		if e.complexity.ScheduledWorkflowsRunDetails.ClusterName == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.ClusterName(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.cluster_type":
+		if e.complexity.ScheduledWorkflowsRunDetails.ClusterType == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.ClusterType(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.created_at":
+		if e.complexity.ScheduledWorkflowsRunDetails.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.CreatedAt(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.cronSyntax":
+		if e.complexity.ScheduledWorkflowsRunDetails.CronSyntax == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.CronSyntax(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.isCustomWorkflow":
+		if e.complexity.ScheduledWorkflowsRunDetails.IsCustomWorkflow == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.IsCustomWorkflow(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.project_id":
+		if e.complexity.ScheduledWorkflowsRunDetails.ProjectID == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.ProjectID(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.updated_at":
+		if e.complexity.ScheduledWorkflowsRunDetails.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.UpdatedAt(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.weightages":
+		if e.complexity.ScheduledWorkflowsRunDetails.Weightages == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.Weightages(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.workflow_description":
+		if e.complexity.ScheduledWorkflowsRunDetails.WorkflowDescription == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.WorkflowDescription(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.workflow_id":
+		if e.complexity.ScheduledWorkflowsRunDetails.WorkflowID == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.WorkflowID(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.workflow_manifest":
+		if e.complexity.ScheduledWorkflowsRunDetails.WorkflowManifest == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.WorkflowManifest(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.workflow_name":
+		if e.complexity.ScheduledWorkflowsRunDetails.WorkflowName == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.WorkflowName(childComplexity), true
+
+	case "ScheduledWorkflowsRunDetails.workflow_runs":
+		if e.complexity.ScheduledWorkflowsRunDetails.WorkflowRuns == nil {
+			break
+		}
+
+		return e.complexity.ScheduledWorkflowsRunDetails.WorkflowRuns(childComplexity), true
+
 	case "Subscription.clusterConnect":
 		if e.complexity.Subscription.ClusterConnect == nil {
 			break
@@ -902,7 +1044,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Subscription.ClusterConnect(childComplexity, args["clusterInfo"].(model.ClusterIdentity)), true
+		return e.complexity.Subscription.ClusterConnect(childComplexity, args["clusterInfo"].(model1.ClusterIdentity)), true
 
 	case "Subscription.clusterEventListener":
 		if e.complexity.Subscription.ClusterEventListener == nil {
@@ -926,7 +1068,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Subscription.GetPodLog(childComplexity, args["podDetails"].(model.PodLogRequest)), true
+		return e.complexity.Subscription.GetPodLog(childComplexity, args["podDetails"].(model1.PodLogRequest)), true
 
 	case "Subscription.workflowEventListener":
 		if e.complexity.Subscription.WorkflowEventListener == nil {
@@ -1377,6 +1519,23 @@ type ScheduledWorkflows {
 	cluster_type: String!
 }
 
+type ScheduledWorkflowsRunDetails {
+	workflow_id: String!
+	workflow_manifest: String!
+	cronSyntax: String!
+	cluster_name: String!
+	workflow_name: String!
+	workflow_description: String!
+	weightages: [weightages!]!
+	isCustomWorkflow: Boolean!
+	updated_at: String!
+	created_at: String!
+	project_id: ID!
+	cluster_id: ID!
+	cluster_type: String!
+  workflow_runs: [WorkflowRun!]!
+}
+
 type Query{
   getWorkFlowRuns(project_id: String!): [WorkflowRun!]! @authorized
 
@@ -1389,6 +1548,8 @@ type Query{
   users: [User!]! @authorized
 
   getScheduledWorkflows(project_id: String!): [ScheduledWorkflows]! @authorized
+
+  getScheduledWorkflowsRunDetails(schedule_ids: [String!]!): [ScheduledWorkflowsRunDetails]! @authorized
 }
 
 type Mutation{
@@ -1477,7 +1638,7 @@ func (ec *executionContext) field_Mutation_acceptInvitation_args(ctx context.Con
 	args := map[string]interface{}{}
 	var arg0 model.MemberInput
 	if tmp, ok := rawArgs["member"]; ok {
-		arg0, err = ec.unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx, tmp)
+		arg0, err = ec.unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1489,7 +1650,7 @@ func (ec *executionContext) field_Mutation_acceptInvitation_args(ctx context.Con
 func (ec *executionContext) field_Mutation_chaosWorkflowRun_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.WorkflowRunInput
+	var arg0 model1.WorkflowRunInput
 	if tmp, ok := rawArgs["workflowData"]; ok {
 		arg0, err = ec.unmarshalNWorkflowRunInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRunInput(ctx, tmp)
 		if err != nil {
@@ -1503,7 +1664,7 @@ func (ec *executionContext) field_Mutation_chaosWorkflowRun_args(ctx context.Con
 func (ec *executionContext) field_Mutation_clusterConfirm_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ClusterIdentity
+	var arg0 model1.ClusterIdentity
 	if tmp, ok := rawArgs["identity"]; ok {
 		arg0, err = ec.unmarshalNClusterIdentity2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterIdentity(ctx, tmp)
 		if err != nil {
@@ -1517,7 +1678,7 @@ func (ec *executionContext) field_Mutation_clusterConfirm_args(ctx context.Conte
 func (ec *executionContext) field_Mutation_createChaosWorkFlow_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ChaosWorkFlowInput
+	var arg0 model1.ChaosWorkFlowInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalNChaosWorkFlowInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowInput(ctx, tmp)
 		if err != nil {
@@ -1533,7 +1694,7 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 	args := map[string]interface{}{}
 	var arg0 model.CreateUserInput
 	if tmp, ok := rawArgs["user"]; ok {
-		arg0, err = ec.unmarshalNCreateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐCreateUserInput(ctx, tmp)
+		arg0, err = ec.unmarshalNCreateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐCreateUserInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1547,7 +1708,7 @@ func (ec *executionContext) field_Mutation_declineInvitation_args(ctx context.Co
 	args := map[string]interface{}{}
 	var arg0 model.MemberInput
 	if tmp, ok := rawArgs["member"]; ok {
-		arg0, err = ec.unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx, tmp)
+		arg0, err = ec.unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1573,7 +1734,7 @@ func (ec *executionContext) field_Mutation_deleteChaosWorkflow_args(ctx context.
 func (ec *executionContext) field_Mutation_newClusterEvent_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ClusterEventInput
+	var arg0 model1.ClusterEventInput
 	if tmp, ok := rawArgs["clusterEvent"]; ok {
 		arg0, err = ec.unmarshalNClusterEventInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterEventInput(ctx, tmp)
 		if err != nil {
@@ -1587,7 +1748,7 @@ func (ec *executionContext) field_Mutation_newClusterEvent_args(ctx context.Cont
 func (ec *executionContext) field_Mutation_podLog_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.PodLog
+	var arg0 model1.PodLog
 	if tmp, ok := rawArgs["log"]; ok {
 		arg0, err = ec.unmarshalNPodLog2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLog(ctx, tmp)
 		if err != nil {
@@ -1603,7 +1764,7 @@ func (ec *executionContext) field_Mutation_sendInvitation_args(ctx context.Conte
 	args := map[string]interface{}{}
 	var arg0 model.MemberInput
 	if tmp, ok := rawArgs["member"]; ok {
-		arg0, err = ec.unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx, tmp)
+		arg0, err = ec.unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1617,7 +1778,7 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 	args := map[string]interface{}{}
 	var arg0 model.UpdateUserInput
 	if tmp, ok := rawArgs["user"]; ok {
-		arg0, err = ec.unmarshalNUpdateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUpdateUserInput(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐUpdateUserInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1629,7 +1790,7 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_userClusterReg_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ClusterInput
+	var arg0 model1.ClusterInput
 	if tmp, ok := rawArgs["clusterInput"]; ok {
 		arg0, err = ec.unmarshalNClusterInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterInput(ctx, tmp)
 		if err != nil {
@@ -1690,6 +1851,20 @@ func (ec *executionContext) field_Query_getProject_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_getScheduledWorkflowsRunDetails_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []string
+	if tmp, ok := rawArgs["schedule_ids"]; ok {
+		arg0, err = ec.unmarshalNString2ᚕstringᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["schedule_ids"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_getScheduledWorkflows_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1735,7 +1910,7 @@ func (ec *executionContext) field_Query_getWorkFlowRuns_args(ctx context.Context
 func (ec *executionContext) field_Subscription_clusterConnect_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ClusterIdentity
+	var arg0 model1.ClusterIdentity
 	if tmp, ok := rawArgs["clusterInfo"]; ok {
 		arg0, err = ec.unmarshalNClusterIdentity2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterIdentity(ctx, tmp)
 		if err != nil {
@@ -1763,7 +1938,7 @@ func (ec *executionContext) field_Subscription_clusterEventListener_args(ctx con
 func (ec *executionContext) field_Subscription_getPodLog_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.PodLogRequest
+	var arg0 model1.PodLogRequest
 	if tmp, ok := rawArgs["podDetails"]; ok {
 		arg0, err = ec.unmarshalNPodLogRequest2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLogRequest(ctx, tmp)
 		if err != nil {
@@ -1824,7 +1999,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _ActionPayload_request_type(ctx context.Context, field graphql.CollectedField, obj *model.ActionPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _ActionPayload_request_type(ctx context.Context, field graphql.CollectedField, obj *model1.ActionPayload) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1855,7 +2030,7 @@ func (ec *executionContext) _ActionPayload_request_type(ctx context.Context, fie
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ActionPayload_k8s_manifest(ctx context.Context, field graphql.CollectedField, obj *model.ActionPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _ActionPayload_k8s_manifest(ctx context.Context, field graphql.CollectedField, obj *model1.ActionPayload) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1886,7 +2061,7 @@ func (ec *executionContext) _ActionPayload_k8s_manifest(ctx context.Context, fie
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ActionPayload_namespace(ctx context.Context, field graphql.CollectedField, obj *model.ActionPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _ActionPayload_namespace(ctx context.Context, field graphql.CollectedField, obj *model1.ActionPayload) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1917,7 +2092,7 @@ func (ec *executionContext) _ActionPayload_namespace(ctx context.Context, field 
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ActionPayload_external_data(ctx context.Context, field graphql.CollectedField, obj *model.ActionPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _ActionPayload_external_data(ctx context.Context, field graphql.CollectedField, obj *model1.ActionPayload) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1948,7 +2123,7 @@ func (ec *executionContext) _ActionPayload_external_data(ctx context.Context, fi
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ChaosWorkFlowResponse_workflow_id(ctx context.Context, field graphql.CollectedField, obj *model.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ChaosWorkFlowResponse_workflow_id(ctx context.Context, field graphql.CollectedField, obj *model1.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1982,7 +2157,7 @@ func (ec *executionContext) _ChaosWorkFlowResponse_workflow_id(ctx context.Conte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ChaosWorkFlowResponse_cronSyntax(ctx context.Context, field graphql.CollectedField, obj *model.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ChaosWorkFlowResponse_cronSyntax(ctx context.Context, field graphql.CollectedField, obj *model1.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2016,7 +2191,7 @@ func (ec *executionContext) _ChaosWorkFlowResponse_cronSyntax(ctx context.Contex
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ChaosWorkFlowResponse_workflow_name(ctx context.Context, field graphql.CollectedField, obj *model.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ChaosWorkFlowResponse_workflow_name(ctx context.Context, field graphql.CollectedField, obj *model1.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2050,7 +2225,7 @@ func (ec *executionContext) _ChaosWorkFlowResponse_workflow_name(ctx context.Con
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ChaosWorkFlowResponse_workflow_description(ctx context.Context, field graphql.CollectedField, obj *model.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ChaosWorkFlowResponse_workflow_description(ctx context.Context, field graphql.CollectedField, obj *model1.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2084,7 +2259,7 @@ func (ec *executionContext) _ChaosWorkFlowResponse_workflow_description(ctx cont
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ChaosWorkFlowResponse_isCustomWorkflow(ctx context.Context, field graphql.CollectedField, obj *model.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ChaosWorkFlowResponse_isCustomWorkflow(ctx context.Context, field graphql.CollectedField, obj *model1.ChaosWorkFlowResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2118,7 +2293,7 @@ func (ec *executionContext) _ChaosWorkFlowResponse_isCustomWorkflow(ctx context.
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_cluster_id(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_cluster_id(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2152,7 +2327,7 @@ func (ec *executionContext) _Cluster_cluster_id(ctx context.Context, field graph
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_project_id(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_project_id(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2186,7 +2361,7 @@ func (ec *executionContext) _Cluster_project_id(ctx context.Context, field graph
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_cluster_name(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_cluster_name(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2220,7 +2395,7 @@ func (ec *executionContext) _Cluster_cluster_name(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_description(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_description(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2251,7 +2426,7 @@ func (ec *executionContext) _Cluster_description(ctx context.Context, field grap
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_platform_name(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_platform_name(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2285,7 +2460,7 @@ func (ec *executionContext) _Cluster_platform_name(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_access_key(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_access_key(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2319,7 +2494,7 @@ func (ec *executionContext) _Cluster_access_key(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_is_registered(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_is_registered(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2353,7 +2528,7 @@ func (ec *executionContext) _Cluster_is_registered(ctx context.Context, field gr
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_is_cluster_confirmed(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_is_cluster_confirmed(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2387,7 +2562,7 @@ func (ec *executionContext) _Cluster_is_cluster_confirmed(ctx context.Context, f
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_is_active(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_is_active(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2421,7 +2596,7 @@ func (ec *executionContext) _Cluster_is_active(ctx context.Context, field graphq
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_updated_at(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2455,7 +2630,7 @@ func (ec *executionContext) _Cluster_updated_at(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_created_at(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2489,7 +2664,7 @@ func (ec *executionContext) _Cluster_created_at(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Cluster_cluster_type(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+func (ec *executionContext) _Cluster_cluster_type(ctx context.Context, field graphql.CollectedField, obj *model1.Cluster) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2523,7 +2698,7 @@ func (ec *executionContext) _Cluster_cluster_type(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterAction_project_id(ctx context.Context, field graphql.CollectedField, obj *model.ClusterAction) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterAction_project_id(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterAction) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2557,7 +2732,7 @@ func (ec *executionContext) _ClusterAction_project_id(ctx context.Context, field
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterAction_action(ctx context.Context, field graphql.CollectedField, obj *model.ClusterAction) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterAction_action(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterAction) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2586,12 +2761,12 @@ func (ec *executionContext) _ClusterAction_action(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ActionPayload)
+	res := resTmp.(*model1.ActionPayload)
 	fc.Result = res
 	return ec.marshalNActionPayload2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐActionPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterConfirmResponse_isClusterConfirmed(ctx context.Context, field graphql.CollectedField, obj *model.ClusterConfirmResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterConfirmResponse_isClusterConfirmed(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterConfirmResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2625,7 +2800,7 @@ func (ec *executionContext) _ClusterConfirmResponse_isClusterConfirmed(ctx conte
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterConfirmResponse_newClusterKey(ctx context.Context, field graphql.CollectedField, obj *model.ClusterConfirmResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterConfirmResponse_newClusterKey(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterConfirmResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2656,7 +2831,7 @@ func (ec *executionContext) _ClusterConfirmResponse_newClusterKey(ctx context.Co
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterConfirmResponse_cluster_id(ctx context.Context, field graphql.CollectedField, obj *model.ClusterConfirmResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterConfirmResponse_cluster_id(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterConfirmResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2687,7 +2862,7 @@ func (ec *executionContext) _ClusterConfirmResponse_cluster_id(ctx context.Conte
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterEvent_event_id(ctx context.Context, field graphql.CollectedField, obj *model.ClusterEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterEvent_event_id(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterEvent) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2721,7 +2896,7 @@ func (ec *executionContext) _ClusterEvent_event_id(ctx context.Context, field gr
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterEvent_event_type(ctx context.Context, field graphql.CollectedField, obj *model.ClusterEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterEvent_event_type(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterEvent) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2755,7 +2930,7 @@ func (ec *executionContext) _ClusterEvent_event_type(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterEvent_event_name(ctx context.Context, field graphql.CollectedField, obj *model.ClusterEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterEvent_event_name(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterEvent) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2789,7 +2964,7 @@ func (ec *executionContext) _ClusterEvent_event_name(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterEvent_description(ctx context.Context, field graphql.CollectedField, obj *model.ClusterEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterEvent_description(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterEvent) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2823,7 +2998,7 @@ func (ec *executionContext) _ClusterEvent_description(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ClusterEvent_cluster(ctx context.Context, field graphql.CollectedField, obj *model.ClusterEvent) (ret graphql.Marshaler) {
+func (ec *executionContext) _ClusterEvent_cluster(ctx context.Context, field graphql.CollectedField, obj *model1.ClusterEvent) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2852,12 +3027,12 @@ func (ec *executionContext) _ClusterEvent_cluster(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Cluster)
+	res := resTmp.(*model1.Cluster)
 	fc.Result = res
 	return ec.marshalNCluster2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐCluster(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Member_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Member) (ret graphql.Marshaler) {
+func (ec *executionContext) _Member_user_id(ctx context.Context, field graphql.CollectedField, obj *model1.Member) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2891,7 +3066,7 @@ func (ec *executionContext) _Member_user_id(ctx context.Context, field graphql.C
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Member_user_name(ctx context.Context, field graphql.CollectedField, obj *model.Member) (ret graphql.Marshaler) {
+func (ec *executionContext) _Member_user_name(ctx context.Context, field graphql.CollectedField, obj *model1.Member) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2925,7 +3100,7 @@ func (ec *executionContext) _Member_user_name(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Member_name(ctx context.Context, field graphql.CollectedField, obj *model.Member) (ret graphql.Marshaler) {
+func (ec *executionContext) _Member_name(ctx context.Context, field graphql.CollectedField, obj *model1.Member) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2936,13 +3111,13 @@ func (ec *executionContext) _Member_name(ctx context.Context, field graphql.Coll
 		Object:   "Member",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
+		return ec.resolvers.Member().Name(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2959,7 +3134,7 @@ func (ec *executionContext) _Member_name(ctx context.Context, field graphql.Coll
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Member_email(ctx context.Context, field graphql.CollectedField, obj *model.Member) (ret graphql.Marshaler) {
+func (ec *executionContext) _Member_email(ctx context.Context, field graphql.CollectedField, obj *model1.Member) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2970,13 +3145,13 @@ func (ec *executionContext) _Member_email(ctx context.Context, field graphql.Col
 		Object:   "Member",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
+		return ec.resolvers.Member().Email(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2993,7 +3168,7 @@ func (ec *executionContext) _Member_email(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Member_role(ctx context.Context, field graphql.CollectedField, obj *model.Member) (ret graphql.Marshaler) {
+func (ec *executionContext) _Member_role(ctx context.Context, field graphql.CollectedField, obj *model1.Member) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3004,13 +3179,13 @@ func (ec *executionContext) _Member_role(ctx context.Context, field graphql.Coll
 		Object:   "Member",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Role, nil
+		return ec.resolvers.Member().Role(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3024,10 +3199,10 @@ func (ec *executionContext) _Member_role(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(model.MemberRole)
 	fc.Result = res
-	return ec.marshalNMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx, field.Selections, res)
+	return ec.marshalNMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Member_invitation(ctx context.Context, field graphql.CollectedField, obj *model.Member) (ret graphql.Marshaler) {
+func (ec *executionContext) _Member_invitation(ctx context.Context, field graphql.CollectedField, obj *model1.Member) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3061,7 +3236,7 @@ func (ec *executionContext) _Member_invitation(ctx context.Context, field graphq
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Member_joined_at(ctx context.Context, field graphql.CollectedField, obj *model.Member) (ret graphql.Marshaler) {
+func (ec *executionContext) _Member_joined_at(ctx context.Context, field graphql.CollectedField, obj *model1.Member) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3072,13 +3247,13 @@ func (ec *executionContext) _Member_joined_at(ctx context.Context, field graphql
 		Object:   "Member",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.JoinedAt, nil
+		return ec.resolvers.Member().JoinedAt(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3120,7 +3295,7 @@ func (ec *executionContext) _Mutation_userClusterReg(ctx context.Context, field 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UserClusterReg(rctx, args["clusterInput"].(model.ClusterInput))
+			return ec.resolvers.Mutation().UserClusterReg(rctx, args["clusterInput"].(model1.ClusterInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Authorized == nil {
@@ -3181,7 +3356,7 @@ func (ec *executionContext) _Mutation_createChaosWorkFlow(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateChaosWorkFlow(rctx, args["input"].(model.ChaosWorkFlowInput))
+			return ec.resolvers.Mutation().CreateChaosWorkFlow(rctx, args["input"].(model1.ChaosWorkFlowInput))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Authorized == nil {
@@ -3197,7 +3372,7 @@ func (ec *executionContext) _Mutation_createChaosWorkFlow(ctx context.Context, f
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.ChaosWorkFlowResponse); ok {
+		if data, ok := tmp.(*model1.ChaosWorkFlowResponse); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.ChaosWorkFlowResponse`, tmp)
@@ -3212,7 +3387,7 @@ func (ec *executionContext) _Mutation_createChaosWorkFlow(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ChaosWorkFlowResponse)
+	res := resTmp.(*model1.ChaosWorkFlowResponse)
 	fc.Result = res
 	return ec.marshalNChaosWorkFlowResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowResponse(ctx, field.Selections, res)
 }
@@ -3258,7 +3433,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.User); ok {
+		if data, ok := tmp.(*model1.User); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.User`, tmp)
@@ -3273,7 +3448,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -3441,7 +3616,7 @@ func (ec *executionContext) _Mutation_sendInvitation(ctx context.Context, field 
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.Member); ok {
+		if data, ok := tmp.(*model1.Member); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.Member`, tmp)
@@ -3456,7 +3631,7 @@ func (ec *executionContext) _Mutation_sendInvitation(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Member)
+	res := resTmp.(*model1.Member)
 	fc.Result = res
 	return ec.marshalNMember2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMember(ctx, field.Selections, res)
 }
@@ -3607,7 +3782,7 @@ func (ec *executionContext) _Mutation_clusterConfirm(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ClusterConfirm(rctx, args["identity"].(model.ClusterIdentity))
+		return ec.resolvers.Mutation().ClusterConfirm(rctx, args["identity"].(model1.ClusterIdentity))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3619,7 +3794,7 @@ func (ec *executionContext) _Mutation_clusterConfirm(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.ClusterConfirmResponse)
+	res := resTmp.(*model1.ClusterConfirmResponse)
 	fc.Result = res
 	return ec.marshalNClusterConfirmResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterConfirmResponse(ctx, field.Selections, res)
 }
@@ -3648,7 +3823,7 @@ func (ec *executionContext) _Mutation_newClusterEvent(ctx context.Context, field
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().NewClusterEvent(rctx, args["clusterEvent"].(model.ClusterEventInput))
+		return ec.resolvers.Mutation().NewClusterEvent(rctx, args["clusterEvent"].(model1.ClusterEventInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3689,7 +3864,7 @@ func (ec *executionContext) _Mutation_chaosWorkflowRun(ctx context.Context, fiel
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ChaosWorkflowRun(rctx, args["workflowData"].(model.WorkflowRunInput))
+		return ec.resolvers.Mutation().ChaosWorkflowRun(rctx, args["workflowData"].(model1.WorkflowRunInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3730,7 +3905,7 @@ func (ec *executionContext) _Mutation_podLog(ctx context.Context, field graphql.
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().PodLog(rctx, args["log"].(model.PodLog))
+		return ec.resolvers.Mutation().PodLog(rctx, args["log"].(model1.PodLog))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3747,7 +3922,7 @@ func (ec *executionContext) _Mutation_podLog(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PodLogResponse_workflow_run_id(ctx context.Context, field graphql.CollectedField, obj *model.PodLogResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _PodLogResponse_workflow_run_id(ctx context.Context, field graphql.CollectedField, obj *model1.PodLogResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3781,7 +3956,7 @@ func (ec *executionContext) _PodLogResponse_workflow_run_id(ctx context.Context,
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PodLogResponse_pod_name(ctx context.Context, field graphql.CollectedField, obj *model.PodLogResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _PodLogResponse_pod_name(ctx context.Context, field graphql.CollectedField, obj *model1.PodLogResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3815,7 +3990,7 @@ func (ec *executionContext) _PodLogResponse_pod_name(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PodLogResponse_pod_type(ctx context.Context, field graphql.CollectedField, obj *model.PodLogResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _PodLogResponse_pod_type(ctx context.Context, field graphql.CollectedField, obj *model1.PodLogResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3849,7 +4024,7 @@ func (ec *executionContext) _PodLogResponse_pod_type(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PodLogResponse_log(ctx context.Context, field graphql.CollectedField, obj *model.PodLogResponse) (ret graphql.Marshaler) {
+func (ec *executionContext) _PodLogResponse_log(ctx context.Context, field graphql.CollectedField, obj *model1.PodLogResponse) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3883,7 +4058,7 @@ func (ec *executionContext) _PodLogResponse_log(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Project_id(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+func (ec *executionContext) _Project_id(ctx context.Context, field graphql.CollectedField, obj *model1.Project) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3917,7 +4092,7 @@ func (ec *executionContext) _Project_id(ctx context.Context, field graphql.Colle
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Project_name(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+func (ec *executionContext) _Project_name(ctx context.Context, field graphql.CollectedField, obj *model1.Project) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3951,7 +4126,7 @@ func (ec *executionContext) _Project_name(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Project_members(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+func (ec *executionContext) _Project_members(ctx context.Context, field graphql.CollectedField, obj *model1.Project) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3980,12 +4155,12 @@ func (ec *executionContext) _Project_members(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Member)
+	res := resTmp.([]*model1.Member)
 	fc.Result = res
 	return ec.marshalNMember2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Project_state(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+func (ec *executionContext) _Project_state(ctx context.Context, field graphql.CollectedField, obj *model1.Project) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4016,7 +4191,7 @@ func (ec *executionContext) _Project_state(ctx context.Context, field graphql.Co
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Project_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+func (ec *executionContext) _Project_created_at(ctx context.Context, field graphql.CollectedField, obj *model1.Project) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4050,7 +4225,7 @@ func (ec *executionContext) _Project_created_at(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Project_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+func (ec *executionContext) _Project_updated_at(ctx context.Context, field graphql.CollectedField, obj *model1.Project) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4084,7 +4259,7 @@ func (ec *executionContext) _Project_updated_at(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Project_removed_at(ctx context.Context, field graphql.CollectedField, obj *model.Project) (ret graphql.Marshaler) {
+func (ec *executionContext) _Project_removed_at(ctx context.Context, field graphql.CollectedField, obj *model1.Project) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4159,7 +4334,7 @@ func (ec *executionContext) _Query_getWorkFlowRuns(ctx context.Context, field gr
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*model.WorkflowRun); ok {
+		if data, ok := tmp.([]*model1.WorkflowRun); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.WorkflowRun`, tmp)
@@ -4174,7 +4349,7 @@ func (ec *executionContext) _Query_getWorkFlowRuns(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.WorkflowRun)
+	res := resTmp.([]*model1.WorkflowRun)
 	fc.Result = res
 	return ec.marshalNWorkflowRun2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRunᚄ(ctx, field.Selections, res)
 }
@@ -4220,7 +4395,7 @@ func (ec *executionContext) _Query_getCluster(ctx context.Context, field graphql
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*model.Cluster); ok {
+		if data, ok := tmp.([]*model1.Cluster); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.Cluster`, tmp)
@@ -4235,7 +4410,7 @@ func (ec *executionContext) _Query_getCluster(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Cluster)
+	res := resTmp.([]*model1.Cluster)
 	fc.Result = res
 	return ec.marshalNCluster2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterᚄ(ctx, field.Selections, res)
 }
@@ -4281,7 +4456,7 @@ func (ec *executionContext) _Query_getUser(ctx context.Context, field graphql.Co
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.User); ok {
+		if data, ok := tmp.(*model1.User); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.User`, tmp)
@@ -4296,7 +4471,7 @@ func (ec *executionContext) _Query_getUser(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -4342,7 +4517,7 @@ func (ec *executionContext) _Query_getProject(ctx context.Context, field graphql
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(*model.Project); ok {
+		if data, ok := tmp.(*model1.Project); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.Project`, tmp)
@@ -4357,7 +4532,7 @@ func (ec *executionContext) _Query_getProject(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Project)
+	res := resTmp.(*model1.Project)
 	fc.Result = res
 	return ec.marshalNProject2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProject(ctx, field.Selections, res)
 }
@@ -4396,7 +4571,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*model.User); ok {
+		if data, ok := tmp.([]*model1.User); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.User`, tmp)
@@ -4411,7 +4586,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.User)
+	res := resTmp.([]*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
 }
@@ -4460,7 +4635,7 @@ func (ec *executionContext) _Query_getScheduledWorkflows(ctx context.Context, fi
 		if data, ok := tmp.([]*model.ScheduledWorkflows); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.ScheduledWorkflows`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/litmuschaos/litmus/litmus-portal/graphql-server/graph/model.ScheduledWorkflows`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4474,7 +4649,68 @@ func (ec *executionContext) _Query_getScheduledWorkflows(ctx context.Context, fi
 	}
 	res := resTmp.([]*model.ScheduledWorkflows)
 	fc.Result = res
-	return ec.marshalNScheduledWorkflows2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx, field.Selections, res)
+	return ec.marshalNScheduledWorkflows2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getScheduledWorkflowsRunDetails(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getScheduledWorkflowsRunDetails_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().GetScheduledWorkflowsRunDetails(rctx, args["schedule_ids"].([]string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Authorized == nil {
+				return nil, errors.New("directive authorized is not implemented")
+			}
+			return ec.directives.Authorized(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.ScheduledWorkflowsRunDetails); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/litmuschaos/litmus/litmus-portal/graphql-server/graph/model.ScheduledWorkflowsRunDetails`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ScheduledWorkflowsRunDetails)
+	fc.Result = res
+	return ec.marshalNScheduledWorkflowsRunDetails2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflowsRunDetails(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4781,7 +5017,7 @@ func (ec *executionContext) _ScheduledWorkflows_weightages(ctx context.Context, 
 	}
 	res := resTmp.([]*model.Weightages)
 	fc.Result = res
-	return ec.marshalNweightages2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesᚄ(ctx, field.Selections, res)
+	return ec.marshalNweightages2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ScheduledWorkflows_isCustomWorkflow(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflows) (ret graphql.Marshaler) {
@@ -4988,6 +5224,482 @@ func (ec *executionContext) _ScheduledWorkflows_cluster_type(ctx context.Context
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_workflow_id(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkflowID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_workflow_manifest(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkflowManifest, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_cronSyntax(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CronSyntax, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_cluster_name(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClusterName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_workflow_name(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkflowName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_workflow_description(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkflowDescription, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_weightages(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Weightages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Weightages)
+	fc.Result = res
+	return ec.marshalNweightages2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_isCustomWorkflow(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsCustomWorkflow, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_created_at(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_project_id(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProjectID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_cluster_id(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClusterID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_cluster_type(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClusterType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails_workflow_runs(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledWorkflowsRunDetails) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ScheduledWorkflowsRunDetails",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkflowRuns, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model1.WorkflowRun)
+	fc.Result = res
+	return ec.marshalNWorkflowRun2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRunᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Subscription_clusterEventListener(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5029,7 +5741,7 @@ func (ec *executionContext) _Subscription_clusterEventListener(ctx context.Conte
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(<-chan *model.ClusterEvent); ok {
+		if data, ok := tmp.(<-chan *model1.ClusterEvent); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.ClusterEvent`, tmp)
@@ -5045,7 +5757,7 @@ func (ec *executionContext) _Subscription_clusterEventListener(ctx context.Conte
 		return nil
 	}
 	return func() graphql.Marshaler {
-		res, ok := <-resTmp.(<-chan *model.ClusterEvent)
+		res, ok := <-resTmp.(<-chan *model1.ClusterEvent)
 		if !ok {
 			return nil
 		}
@@ -5100,7 +5812,7 @@ func (ec *executionContext) _Subscription_workflowEventListener(ctx context.Cont
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(<-chan *model.WorkflowRun); ok {
+		if data, ok := tmp.(<-chan *model1.WorkflowRun); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.WorkflowRun`, tmp)
@@ -5116,7 +5828,7 @@ func (ec *executionContext) _Subscription_workflowEventListener(ctx context.Cont
 		return nil
 	}
 	return func() graphql.Marshaler {
-		res, ok := <-resTmp.(<-chan *model.WorkflowRun)
+		res, ok := <-resTmp.(<-chan *model1.WorkflowRun)
 		if !ok {
 			return nil
 		}
@@ -5155,7 +5867,7 @@ func (ec *executionContext) _Subscription_getPodLog(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Subscription().GetPodLog(rctx, args["podDetails"].(model.PodLogRequest))
+			return ec.resolvers.Subscription().GetPodLog(rctx, args["podDetails"].(model1.PodLogRequest))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Authorized == nil {
@@ -5171,7 +5883,7 @@ func (ec *executionContext) _Subscription_getPodLog(ctx context.Context, field g
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(<-chan *model.PodLogResponse); ok {
+		if data, ok := tmp.(<-chan *model1.PodLogResponse); ok {
 			return data, nil
 		}
 		return nil, fmt.Errorf(`unexpected type %T from directive, should be <-chan *github.com/litmuschaos/litmus/litmus-portal/backend/graphql-server/graph/model.PodLogResponse`, tmp)
@@ -5187,7 +5899,7 @@ func (ec *executionContext) _Subscription_getPodLog(ctx context.Context, field g
 		return nil
 	}
 	return func() graphql.Marshaler {
-		res, ok := <-resTmp.(<-chan *model.PodLogResponse)
+		res, ok := <-resTmp.(<-chan *model1.PodLogResponse)
 		if !ok {
 			return nil
 		}
@@ -5225,7 +5937,7 @@ func (ec *executionContext) _Subscription_clusterConnect(ctx context.Context, fi
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().ClusterConnect(rctx, args["clusterInfo"].(model.ClusterIdentity))
+		return ec.resolvers.Subscription().ClusterConnect(rctx, args["clusterInfo"].(model1.ClusterIdentity))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5238,7 +5950,7 @@ func (ec *executionContext) _Subscription_clusterConnect(ctx context.Context, fi
 		return nil
 	}
 	return func() graphql.Marshaler {
-		res, ok := <-resTmp.(<-chan *model.ClusterAction)
+		res, ok := <-resTmp.(<-chan *model1.ClusterAction)
 		if !ok {
 			return nil
 		}
@@ -5252,7 +5964,7 @@ func (ec *executionContext) _Subscription_clusterConnect(ctx context.Context, fi
 	}
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5286,7 +5998,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5320,7 +6032,7 @@ func (ec *executionContext) _User_username(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5351,7 +6063,7 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_is_email_verified(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_is_email_verified(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5382,7 +6094,7 @@ func (ec *executionContext) _User_is_email_verified(ctx context.Context, field g
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_company_name(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_company_name(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5413,7 +6125,7 @@ func (ec *executionContext) _User_company_name(ctx context.Context, field graphq
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5444,7 +6156,7 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_projects(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_projects(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5473,12 +6185,12 @@ func (ec *executionContext) _User_projects(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Project)
+	res := resTmp.([]*model1.Project)
 	fc.Result = res
 	return ec.marshalNProject2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProjectᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_role(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_role(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5509,7 +6221,7 @@ func (ec *executionContext) _User_role(ctx context.Context, field graphql.Collec
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_state(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_state(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5540,7 +6252,7 @@ func (ec *executionContext) _User_state(ctx context.Context, field graphql.Colle
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5574,7 +6286,7 @@ func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_updated_at(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5608,7 +6320,7 @@ func (ec *executionContext) _User_updated_at(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_removed_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_removed_at(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5642,7 +6354,7 @@ func (ec *executionContext) _User_removed_at(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_workflow_run_id(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_workflow_run_id(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5676,7 +6388,7 @@ func (ec *executionContext) _WorkflowRun_workflow_run_id(ctx context.Context, fi
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_workflow_id(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_workflow_id(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5710,7 +6422,7 @@ func (ec *executionContext) _WorkflowRun_workflow_id(ctx context.Context, field 
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_cluster_name(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_cluster_name(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5744,7 +6456,7 @@ func (ec *executionContext) _WorkflowRun_cluster_name(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_last_updated(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_last_updated(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5778,7 +6490,7 @@ func (ec *executionContext) _WorkflowRun_last_updated(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_project_id(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_project_id(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5812,7 +6524,7 @@ func (ec *executionContext) _WorkflowRun_project_id(ctx context.Context, field g
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_cluster_id(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_cluster_id(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5846,7 +6558,7 @@ func (ec *executionContext) _WorkflowRun_cluster_id(ctx context.Context, field g
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_workflow_name(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_workflow_name(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5880,7 +6592,7 @@ func (ec *executionContext) _WorkflowRun_workflow_name(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_cluster_type(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_cluster_type(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5891,13 +6603,13 @@ func (ec *executionContext) _WorkflowRun_cluster_type(ctx context.Context, field
 		Object:   "WorkflowRun",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ClusterType, nil
+		return ec.resolvers.WorkflowRun().ClusterType(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5911,7 +6623,7 @@ func (ec *executionContext) _WorkflowRun_cluster_type(ctx context.Context, field
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _WorkflowRun_execution_data(ctx context.Context, field graphql.CollectedField, obj *model.WorkflowRun) (ret graphql.Marshaler) {
+func (ec *executionContext) _WorkflowRun_execution_data(ctx context.Context, field graphql.CollectedField, obj *model1.WorkflowRun) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -7068,8 +7780,8 @@ func (ec *executionContext) _weightages_weightage(ctx context.Context, field gra
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputChaosWorkFlowInput(ctx context.Context, obj interface{}) (model.ChaosWorkFlowInput, error) {
-	var it model.ChaosWorkFlowInput
+func (ec *executionContext) unmarshalInputChaosWorkFlowInput(ctx context.Context, obj interface{}) (model1.ChaosWorkFlowInput, error) {
+	var it model1.ChaosWorkFlowInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7128,8 +7840,8 @@ func (ec *executionContext) unmarshalInputChaosWorkFlowInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputClusterActionInput(ctx context.Context, obj interface{}) (model.ClusterActionInput, error) {
-	var it model.ClusterActionInput
+func (ec *executionContext) unmarshalInputClusterActionInput(ctx context.Context, obj interface{}) (model1.ClusterActionInput, error) {
+	var it model1.ClusterActionInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7152,8 +7864,8 @@ func (ec *executionContext) unmarshalInputClusterActionInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputClusterEventInput(ctx context.Context, obj interface{}) (model.ClusterEventInput, error) {
-	var it model.ClusterEventInput
+func (ec *executionContext) unmarshalInputClusterEventInput(ctx context.Context, obj interface{}) (model1.ClusterEventInput, error) {
+	var it model1.ClusterEventInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7188,8 +7900,8 @@ func (ec *executionContext) unmarshalInputClusterEventInput(ctx context.Context,
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputClusterIdentity(ctx context.Context, obj interface{}) (model.ClusterIdentity, error) {
-	var it model.ClusterIdentity
+func (ec *executionContext) unmarshalInputClusterIdentity(ctx context.Context, obj interface{}) (model1.ClusterIdentity, error) {
+	var it model1.ClusterIdentity
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7212,8 +7924,8 @@ func (ec *executionContext) unmarshalInputClusterIdentity(ctx context.Context, o
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputClusterInput(ctx context.Context, obj interface{}) (model.ClusterInput, error) {
-	var it model.ClusterInput
+func (ec *executionContext) unmarshalInputClusterInput(ctx context.Context, obj interface{}) (model1.ClusterInput, error) {
+	var it model1.ClusterInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7316,7 +8028,7 @@ func (ec *executionContext) unmarshalInputMemberInput(ctx context.Context, obj i
 			}
 		case "role":
 			var err error
-			it.Role, err = ec.unmarshalOMemberRole2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx, v)
+			it.Role, err = ec.unmarshalOMemberRole2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7326,8 +8038,8 @@ func (ec *executionContext) unmarshalInputMemberInput(ctx context.Context, obj i
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPodLog(ctx context.Context, obj interface{}) (model.PodLog, error) {
-	var it model.PodLog
+func (ec *executionContext) unmarshalInputPodLog(ctx context.Context, obj interface{}) (model1.PodLog, error) {
+	var it model1.PodLog
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7374,8 +8086,8 @@ func (ec *executionContext) unmarshalInputPodLog(ctx context.Context, obj interf
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPodLogRequest(ctx context.Context, obj interface{}) (model.PodLogRequest, error) {
-	var it model.PodLogRequest
+func (ec *executionContext) unmarshalInputPodLogRequest(ctx context.Context, obj interface{}) (model1.PodLogRequest, error) {
+	var it model1.PodLogRequest
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7470,8 +8182,8 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputWeightagesInput(ctx context.Context, obj interface{}) (model.WeightagesInput, error) {
-	var it model.WeightagesInput
+func (ec *executionContext) unmarshalInputWeightagesInput(ctx context.Context, obj interface{}) (model1.WeightagesInput, error) {
+	var it model1.WeightagesInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7494,8 +8206,8 @@ func (ec *executionContext) unmarshalInputWeightagesInput(ctx context.Context, o
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputWorkflowRunInput(ctx context.Context, obj interface{}) (model.WorkflowRunInput, error) {
-	var it model.WorkflowRunInput
+func (ec *executionContext) unmarshalInputWorkflowRunInput(ctx context.Context, obj interface{}) (model1.WorkflowRunInput, error) {
+	var it model1.WorkflowRunInput
 	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
@@ -7546,7 +8258,7 @@ func (ec *executionContext) unmarshalInputWorkflowRunInput(ctx context.Context, 
 
 var actionPayloadImplementors = []string{"ActionPayload"}
 
-func (ec *executionContext) _ActionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ActionPayload) graphql.Marshaler {
+func (ec *executionContext) _ActionPayload(ctx context.Context, sel ast.SelectionSet, obj *model1.ActionPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, actionPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7576,7 +8288,7 @@ func (ec *executionContext) _ActionPayload(ctx context.Context, sel ast.Selectio
 
 var chaosWorkFlowResponseImplementors = []string{"ChaosWorkFlowResponse"}
 
-func (ec *executionContext) _ChaosWorkFlowResponse(ctx context.Context, sel ast.SelectionSet, obj *model.ChaosWorkFlowResponse) graphql.Marshaler {
+func (ec *executionContext) _ChaosWorkFlowResponse(ctx context.Context, sel ast.SelectionSet, obj *model1.ChaosWorkFlowResponse) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, chaosWorkFlowResponseImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7623,7 +8335,7 @@ func (ec *executionContext) _ChaosWorkFlowResponse(ctx context.Context, sel ast.
 
 var clusterImplementors = []string{"Cluster"}
 
-func (ec *executionContext) _Cluster(ctx context.Context, sel ast.SelectionSet, obj *model.Cluster) graphql.Marshaler {
+func (ec *executionContext) _Cluster(ctx context.Context, sel ast.SelectionSet, obj *model1.Cluster) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, clusterImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7702,7 +8414,7 @@ func (ec *executionContext) _Cluster(ctx context.Context, sel ast.SelectionSet, 
 
 var clusterActionImplementors = []string{"ClusterAction"}
 
-func (ec *executionContext) _ClusterAction(ctx context.Context, sel ast.SelectionSet, obj *model.ClusterAction) graphql.Marshaler {
+func (ec *executionContext) _ClusterAction(ctx context.Context, sel ast.SelectionSet, obj *model1.ClusterAction) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, clusterActionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7734,7 +8446,7 @@ func (ec *executionContext) _ClusterAction(ctx context.Context, sel ast.Selectio
 
 var clusterConfirmResponseImplementors = []string{"ClusterConfirmResponse"}
 
-func (ec *executionContext) _ClusterConfirmResponse(ctx context.Context, sel ast.SelectionSet, obj *model.ClusterConfirmResponse) graphql.Marshaler {
+func (ec *executionContext) _ClusterConfirmResponse(ctx context.Context, sel ast.SelectionSet, obj *model1.ClusterConfirmResponse) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, clusterConfirmResponseImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7765,7 +8477,7 @@ func (ec *executionContext) _ClusterConfirmResponse(ctx context.Context, sel ast
 
 var clusterEventImplementors = []string{"ClusterEvent"}
 
-func (ec *executionContext) _ClusterEvent(ctx context.Context, sel ast.SelectionSet, obj *model.ClusterEvent) graphql.Marshaler {
+func (ec *executionContext) _ClusterEvent(ctx context.Context, sel ast.SelectionSet, obj *model1.ClusterEvent) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, clusterEventImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7812,7 +8524,7 @@ func (ec *executionContext) _ClusterEvent(ctx context.Context, sel ast.Selection
 
 var memberImplementors = []string{"Member"}
 
-func (ec *executionContext) _Member(ctx context.Context, sel ast.SelectionSet, obj *model.Member) graphql.Marshaler {
+func (ec *executionContext) _Member(ctx context.Context, sel ast.SelectionSet, obj *model1.Member) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, memberImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7824,38 +8536,74 @@ func (ec *executionContext) _Member(ctx context.Context, sel ast.SelectionSet, o
 		case "user_id":
 			out.Values[i] = ec._Member_user_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "user_name":
 			out.Values[i] = ec._Member_user_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "name":
-			out.Values[i] = ec._Member_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Member_name(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "email":
-			out.Values[i] = ec._Member_email(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Member_email(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "role":
-			out.Values[i] = ec._Member_role(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Member_role(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "invitation":
 			out.Values[i] = ec._Member_invitation(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "joined_at":
-			out.Values[i] = ec._Member_joined_at(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Member_joined_at(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7955,7 +8703,7 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 var podLogResponseImplementors = []string{"PodLogResponse"}
 
-func (ec *executionContext) _PodLogResponse(ctx context.Context, sel ast.SelectionSet, obj *model.PodLogResponse) graphql.Marshaler {
+func (ec *executionContext) _PodLogResponse(ctx context.Context, sel ast.SelectionSet, obj *model1.PodLogResponse) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, podLogResponseImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -7997,7 +8745,7 @@ func (ec *executionContext) _PodLogResponse(ctx context.Context, sel ast.Selecti
 
 var projectImplementors = []string{"Project"}
 
-func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, obj *model.Project) graphql.Marshaler {
+func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, obj *model1.Project) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, projectImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -8148,6 +8896,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "getScheduledWorkflowsRunDetails":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getScheduledWorkflowsRunDetails(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -8250,6 +9012,98 @@ func (ec *executionContext) _ScheduledWorkflows(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var scheduledWorkflowsRunDetailsImplementors = []string{"ScheduledWorkflowsRunDetails"}
+
+func (ec *executionContext) _ScheduledWorkflowsRunDetails(ctx context.Context, sel ast.SelectionSet, obj *model.ScheduledWorkflowsRunDetails) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, scheduledWorkflowsRunDetailsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ScheduledWorkflowsRunDetails")
+		case "workflow_id":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_workflow_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "workflow_manifest":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_workflow_manifest(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cronSyntax":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_cronSyntax(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cluster_name":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_cluster_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "workflow_name":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_workflow_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "workflow_description":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_workflow_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "weightages":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_weightages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "isCustomWorkflow":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_isCustomWorkflow(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updated_at":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_updated_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "created_at":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "project_id":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_project_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cluster_id":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_cluster_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cluster_type":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_cluster_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "workflow_runs":
+			out.Values[i] = ec._ScheduledWorkflowsRunDetails_workflow_runs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var subscriptionImplementors = []string{"Subscription"}
 
 func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func() graphql.Marshaler {
@@ -8278,7 +9132,7 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 
 var userImplementors = []string{"User"}
 
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
+func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model1.User) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -8342,7 +9196,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 
 var workflowRunImplementors = []string{"WorkflowRun"}
 
-func (ec *executionContext) _WorkflowRun(ctx context.Context, sel ast.SelectionSet, obj *model.WorkflowRun) graphql.Marshaler {
+func (ec *executionContext) _WorkflowRun(ctx context.Context, sel ast.SelectionSet, obj *model1.WorkflowRun) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, workflowRunImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -8354,44 +9208,53 @@ func (ec *executionContext) _WorkflowRun(ctx context.Context, sel ast.SelectionS
 		case "workflow_run_id":
 			out.Values[i] = ec._WorkflowRun_workflow_run_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "workflow_id":
 			out.Values[i] = ec._WorkflowRun_workflow_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "cluster_name":
 			out.Values[i] = ec._WorkflowRun_cluster_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "last_updated":
 			out.Values[i] = ec._WorkflowRun_last_updated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "project_id":
 			out.Values[i] = ec._WorkflowRun_project_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "cluster_id":
 			out.Values[i] = ec._WorkflowRun_cluster_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "workflow_name":
 			out.Values[i] = ec._WorkflowRun_workflow_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "cluster_type":
-			out.Values[i] = ec._WorkflowRun_cluster_type(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._WorkflowRun_cluster_type(ctx, field, obj)
+				return res
+			})
 		case "execution_data":
 			out.Values[i] = ec._WorkflowRun_execution_data(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -8681,11 +9544,11 @@ func (ec *executionContext) _weightages(ctx context.Context, sel ast.SelectionSe
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNActionPayload2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐActionPayload(ctx context.Context, sel ast.SelectionSet, v model.ActionPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNActionPayload2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐActionPayload(ctx context.Context, sel ast.SelectionSet, v model1.ActionPayload) graphql.Marshaler {
 	return ec._ActionPayload(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNActionPayload2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐActionPayload(ctx context.Context, sel ast.SelectionSet, v *model.ActionPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNActionPayload2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐActionPayload(ctx context.Context, sel ast.SelectionSet, v *model1.ActionPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8709,15 +9572,15 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNChaosWorkFlowInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowInput(ctx context.Context, v interface{}) (model.ChaosWorkFlowInput, error) {
+func (ec *executionContext) unmarshalNChaosWorkFlowInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowInput(ctx context.Context, v interface{}) (model1.ChaosWorkFlowInput, error) {
 	return ec.unmarshalInputChaosWorkFlowInput(ctx, v)
 }
 
-func (ec *executionContext) marshalNChaosWorkFlowResponse2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowResponse(ctx context.Context, sel ast.SelectionSet, v model.ChaosWorkFlowResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNChaosWorkFlowResponse2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowResponse(ctx context.Context, sel ast.SelectionSet, v model1.ChaosWorkFlowResponse) graphql.Marshaler {
 	return ec._ChaosWorkFlowResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNChaosWorkFlowResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowResponse(ctx context.Context, sel ast.SelectionSet, v *model.ChaosWorkFlowResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNChaosWorkFlowResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐChaosWorkFlowResponse(ctx context.Context, sel ast.SelectionSet, v *model1.ChaosWorkFlowResponse) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8727,11 +9590,11 @@ func (ec *executionContext) marshalNChaosWorkFlowResponse2ᚖgithubᚗcomᚋlitm
 	return ec._ChaosWorkFlowResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNCluster2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐCluster(ctx context.Context, sel ast.SelectionSet, v model.Cluster) graphql.Marshaler {
+func (ec *executionContext) marshalNCluster2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐCluster(ctx context.Context, sel ast.SelectionSet, v model1.Cluster) graphql.Marshaler {
 	return ec._Cluster(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNCluster2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Cluster) graphql.Marshaler {
+func (ec *executionContext) marshalNCluster2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.Cluster) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -8768,7 +9631,7 @@ func (ec *executionContext) marshalNCluster2ᚕᚖgithubᚗcomᚋlitmuschaosᚋl
 	return ret
 }
 
-func (ec *executionContext) marshalNCluster2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐCluster(ctx context.Context, sel ast.SelectionSet, v *model.Cluster) graphql.Marshaler {
+func (ec *executionContext) marshalNCluster2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐCluster(ctx context.Context, sel ast.SelectionSet, v *model1.Cluster) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8778,11 +9641,11 @@ func (ec *executionContext) marshalNCluster2ᚖgithubᚗcomᚋlitmuschaosᚋlitm
 	return ec._Cluster(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNClusterAction2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterAction(ctx context.Context, sel ast.SelectionSet, v model.ClusterAction) graphql.Marshaler {
+func (ec *executionContext) marshalNClusterAction2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterAction(ctx context.Context, sel ast.SelectionSet, v model1.ClusterAction) graphql.Marshaler {
 	return ec._ClusterAction(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNClusterAction2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterAction(ctx context.Context, sel ast.SelectionSet, v *model.ClusterAction) graphql.Marshaler {
+func (ec *executionContext) marshalNClusterAction2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterAction(ctx context.Context, sel ast.SelectionSet, v *model1.ClusterAction) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8792,11 +9655,11 @@ func (ec *executionContext) marshalNClusterAction2ᚖgithubᚗcomᚋlitmuschaos�
 	return ec._ClusterAction(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNClusterConfirmResponse2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterConfirmResponse(ctx context.Context, sel ast.SelectionSet, v model.ClusterConfirmResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNClusterConfirmResponse2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterConfirmResponse(ctx context.Context, sel ast.SelectionSet, v model1.ClusterConfirmResponse) graphql.Marshaler {
 	return ec._ClusterConfirmResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNClusterConfirmResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterConfirmResponse(ctx context.Context, sel ast.SelectionSet, v *model.ClusterConfirmResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNClusterConfirmResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterConfirmResponse(ctx context.Context, sel ast.SelectionSet, v *model1.ClusterConfirmResponse) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8806,11 +9669,11 @@ func (ec *executionContext) marshalNClusterConfirmResponse2ᚖgithubᚗcomᚋlit
 	return ec._ClusterConfirmResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNClusterEvent2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterEvent(ctx context.Context, sel ast.SelectionSet, v model.ClusterEvent) graphql.Marshaler {
+func (ec *executionContext) marshalNClusterEvent2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterEvent(ctx context.Context, sel ast.SelectionSet, v model1.ClusterEvent) graphql.Marshaler {
 	return ec._ClusterEvent(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNClusterEvent2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterEvent(ctx context.Context, sel ast.SelectionSet, v *model.ClusterEvent) graphql.Marshaler {
+func (ec *executionContext) marshalNClusterEvent2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterEvent(ctx context.Context, sel ast.SelectionSet, v *model1.ClusterEvent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8820,15 +9683,15 @@ func (ec *executionContext) marshalNClusterEvent2ᚖgithubᚗcomᚋlitmuschaos�
 	return ec._ClusterEvent(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNClusterEventInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterEventInput(ctx context.Context, v interface{}) (model.ClusterEventInput, error) {
+func (ec *executionContext) unmarshalNClusterEventInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterEventInput(ctx context.Context, v interface{}) (model1.ClusterEventInput, error) {
 	return ec.unmarshalInputClusterEventInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNClusterIdentity2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterIdentity(ctx context.Context, v interface{}) (model.ClusterIdentity, error) {
+func (ec *executionContext) unmarshalNClusterIdentity2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterIdentity(ctx context.Context, v interface{}) (model1.ClusterIdentity, error) {
 	return ec.unmarshalInputClusterIdentity(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNClusterIdentity2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterIdentity(ctx context.Context, v interface{}) (*model.ClusterIdentity, error) {
+func (ec *executionContext) unmarshalNClusterIdentity2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterIdentity(ctx context.Context, v interface{}) (*model1.ClusterIdentity, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -8836,11 +9699,11 @@ func (ec *executionContext) unmarshalNClusterIdentity2ᚖgithubᚗcomᚋlitmusch
 	return &res, err
 }
 
-func (ec *executionContext) unmarshalNClusterInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterInput(ctx context.Context, v interface{}) (model.ClusterInput, error) {
+func (ec *executionContext) unmarshalNClusterInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐClusterInput(ctx context.Context, v interface{}) (model1.ClusterInput, error) {
 	return ec.unmarshalInputClusterInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNCreateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐCreateUserInput(ctx context.Context, v interface{}) (model.CreateUserInput, error) {
+func (ec *executionContext) unmarshalNCreateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐCreateUserInput(ctx context.Context, v interface{}) (model.CreateUserInput, error) {
 	return ec.unmarshalInputCreateUserInput(ctx, v)
 }
 
@@ -8872,11 +9735,11 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNMember2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMember(ctx context.Context, sel ast.SelectionSet, v model.Member) graphql.Marshaler {
+func (ec *executionContext) marshalNMember2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMember(ctx context.Context, sel ast.SelectionSet, v model1.Member) graphql.Marshaler {
 	return ec._Member(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNMember2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Member) graphql.Marshaler {
+func (ec *executionContext) marshalNMember2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.Member) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -8913,7 +9776,7 @@ func (ec *executionContext) marshalNMember2ᚕᚖgithubᚗcomᚋlitmuschaosᚋli
 	return ret
 }
 
-func (ec *executionContext) marshalNMember2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMember(ctx context.Context, sel ast.SelectionSet, v *model.Member) graphql.Marshaler {
+func (ec *executionContext) marshalNMember2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMember(ctx context.Context, sel ast.SelectionSet, v *model1.Member) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8923,32 +9786,32 @@ func (ec *executionContext) marshalNMember2ᚖgithubᚗcomᚋlitmuschaosᚋlitmu
 	return ec._Member(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx context.Context, v interface{}) (model.MemberInput, error) {
+func (ec *executionContext) unmarshalNMemberInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberInput(ctx context.Context, v interface{}) (model.MemberInput, error) {
 	return ec.unmarshalInputMemberInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, v interface{}) (model.MemberRole, error) {
+func (ec *executionContext) unmarshalNMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, v interface{}) (model.MemberRole, error) {
 	var res model.MemberRole
 	return res, res.UnmarshalGQL(v)
 }
 
-func (ec *executionContext) marshalNMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, sel ast.SelectionSet, v model.MemberRole) graphql.Marshaler {
+func (ec *executionContext) marshalNMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, sel ast.SelectionSet, v model.MemberRole) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) unmarshalNPodLog2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLog(ctx context.Context, v interface{}) (model.PodLog, error) {
+func (ec *executionContext) unmarshalNPodLog2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLog(ctx context.Context, v interface{}) (model1.PodLog, error) {
 	return ec.unmarshalInputPodLog(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNPodLogRequest2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLogRequest(ctx context.Context, v interface{}) (model.PodLogRequest, error) {
+func (ec *executionContext) unmarshalNPodLogRequest2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLogRequest(ctx context.Context, v interface{}) (model1.PodLogRequest, error) {
 	return ec.unmarshalInputPodLogRequest(ctx, v)
 }
 
-func (ec *executionContext) marshalNPodLogResponse2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLogResponse(ctx context.Context, sel ast.SelectionSet, v model.PodLogResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNPodLogResponse2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLogResponse(ctx context.Context, sel ast.SelectionSet, v model1.PodLogResponse) graphql.Marshaler {
 	return ec._PodLogResponse(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNPodLogResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLogResponse(ctx context.Context, sel ast.SelectionSet, v *model.PodLogResponse) graphql.Marshaler {
+func (ec *executionContext) marshalNPodLogResponse2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐPodLogResponse(ctx context.Context, sel ast.SelectionSet, v *model1.PodLogResponse) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -8958,11 +9821,11 @@ func (ec *executionContext) marshalNPodLogResponse2ᚖgithubᚗcomᚋlitmuschaos
 	return ec._PodLogResponse(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNProject2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v model.Project) graphql.Marshaler {
+func (ec *executionContext) marshalNProject2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v model1.Project) graphql.Marshaler {
 	return ec._Project(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNProject2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProjectᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Project) graphql.Marshaler {
+func (ec *executionContext) marshalNProject2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProjectᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.Project) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -8999,7 +9862,7 @@ func (ec *executionContext) marshalNProject2ᚕᚖgithubᚗcomᚋlitmuschaosᚋl
 	return ret
 }
 
-func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model.Project) graphql.Marshaler {
+func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐProject(ctx context.Context, sel ast.SelectionSet, v *model1.Project) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -9009,7 +9872,7 @@ func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋlitmuschaosᚋlitm
 	return ec._Project(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNScheduledWorkflows2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx context.Context, sel ast.SelectionSet, v []*model.ScheduledWorkflows) graphql.Marshaler {
+func (ec *executionContext) marshalNScheduledWorkflows2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx context.Context, sel ast.SelectionSet, v []*model.ScheduledWorkflows) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9033,7 +9896,44 @@ func (ec *executionContext) marshalNScheduledWorkflows2ᚕᚖgithubᚗcomᚋlitm
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOScheduledWorkflows2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx, sel, v[i])
+			ret[i] = ec.marshalOScheduledWorkflows2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNScheduledWorkflowsRunDetails2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflowsRunDetails(ctx context.Context, sel ast.SelectionSet, v []*model.ScheduledWorkflowsRunDetails) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOScheduledWorkflowsRunDetails2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflowsRunDetails(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -9060,15 +9960,44 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v interface{}) (model.UpdateUserInput, error) {
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v interface{}) (model.UpdateUserInput, error) {
 	return ec.unmarshalInputUpdateUserInput(ctx, v)
 }
 
-func (ec *executionContext) marshalNUser2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model1.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.User) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9105,7 +10034,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitm
 	return ret
 }
 
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model1.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -9115,11 +10044,11 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋlitmuschaosᚋlitmus�
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNWeightagesInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesInput(ctx context.Context, v interface{}) (model.WeightagesInput, error) {
+func (ec *executionContext) unmarshalNWeightagesInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesInput(ctx context.Context, v interface{}) (model1.WeightagesInput, error) {
 	return ec.unmarshalInputWeightagesInput(ctx, v)
 }
 
-func (ec *executionContext) unmarshalNWeightagesInput2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesInputᚄ(ctx context.Context, v interface{}) ([]*model.WeightagesInput, error) {
+func (ec *executionContext) unmarshalNWeightagesInput2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesInputᚄ(ctx context.Context, v interface{}) ([]*model1.WeightagesInput, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -9129,7 +10058,7 @@ func (ec *executionContext) unmarshalNWeightagesInput2ᚕᚖgithubᚗcomᚋlitmu
 		}
 	}
 	var err error
-	res := make([]*model.WeightagesInput, len(vSlice))
+	res := make([]*model1.WeightagesInput, len(vSlice))
 	for i := range vSlice {
 		res[i], err = ec.unmarshalNWeightagesInput2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesInput(ctx, vSlice[i])
 		if err != nil {
@@ -9139,7 +10068,7 @@ func (ec *executionContext) unmarshalNWeightagesInput2ᚕᚖgithubᚗcomᚋlitmu
 	return res, nil
 }
 
-func (ec *executionContext) unmarshalNWeightagesInput2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesInput(ctx context.Context, v interface{}) (*model.WeightagesInput, error) {
+func (ec *executionContext) unmarshalNWeightagesInput2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesInput(ctx context.Context, v interface{}) (*model1.WeightagesInput, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -9147,11 +10076,11 @@ func (ec *executionContext) unmarshalNWeightagesInput2ᚖgithubᚗcomᚋlitmusch
 	return &res, err
 }
 
-func (ec *executionContext) marshalNWorkflowRun2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRun(ctx context.Context, sel ast.SelectionSet, v model.WorkflowRun) graphql.Marshaler {
+func (ec *executionContext) marshalNWorkflowRun2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRun(ctx context.Context, sel ast.SelectionSet, v model1.WorkflowRun) graphql.Marshaler {
 	return ec._WorkflowRun(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNWorkflowRun2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRunᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.WorkflowRun) graphql.Marshaler {
+func (ec *executionContext) marshalNWorkflowRun2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRunᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.WorkflowRun) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9188,7 +10117,7 @@ func (ec *executionContext) marshalNWorkflowRun2ᚕᚖgithubᚗcomᚋlitmuschaos
 	return ret
 }
 
-func (ec *executionContext) marshalNWorkflowRun2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRun(ctx context.Context, sel ast.SelectionSet, v *model.WorkflowRun) graphql.Marshaler {
+func (ec *executionContext) marshalNWorkflowRun2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRun(ctx context.Context, sel ast.SelectionSet, v *model1.WorkflowRun) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -9198,7 +10127,7 @@ func (ec *executionContext) marshalNWorkflowRun2ᚖgithubᚗcomᚋlitmuschaosᚋ
 	return ec._WorkflowRun(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNWorkflowRunInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRunInput(ctx context.Context, v interface{}) (model.WorkflowRunInput, error) {
+func (ec *executionContext) unmarshalNWorkflowRunInput2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWorkflowRunInput(ctx context.Context, v interface{}) (model1.WorkflowRunInput, error) {
 	return ec.unmarshalInputWorkflowRunInput(ctx, v)
 }
 
@@ -9428,11 +10357,11 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalNweightages2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightages(ctx context.Context, sel ast.SelectionSet, v model.Weightages) graphql.Marshaler {
+func (ec *executionContext) marshalNweightages2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightages(ctx context.Context, sel ast.SelectionSet, v model.Weightages) graphql.Marshaler {
 	return ec._weightages(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNweightages2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Weightages) graphql.Marshaler {
+func (ec *executionContext) marshalNweightages2ᚕᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightagesᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Weightages) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9456,7 +10385,7 @@ func (ec *executionContext) marshalNweightages2ᚕᚖgithubᚗcomᚋlitmuschaos�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNweightages2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightages(ctx, sel, v[i])
+			ret[i] = ec.marshalNweightages2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightages(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -9469,7 +10398,7 @@ func (ec *executionContext) marshalNweightages2ᚕᚖgithubᚗcomᚋlitmuschaos�
 	return ret
 }
 
-func (ec *executionContext) marshalNweightages2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightages(ctx context.Context, sel ast.SelectionSet, v *model.Weightages) graphql.Marshaler {
+func (ec *executionContext) marshalNweightages2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐWeightages(ctx context.Context, sel ast.SelectionSet, v *model.Weightages) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -9502,39 +10431,50 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
-func (ec *executionContext) unmarshalOMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, v interface{}) (model.MemberRole, error) {
+func (ec *executionContext) unmarshalOMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, v interface{}) (model.MemberRole, error) {
 	var res model.MemberRole
 	return res, res.UnmarshalGQL(v)
 }
 
-func (ec *executionContext) marshalOMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, sel ast.SelectionSet, v model.MemberRole) graphql.Marshaler {
+func (ec *executionContext) marshalOMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, sel ast.SelectionSet, v model.MemberRole) graphql.Marshaler {
 	return v
 }
 
-func (ec *executionContext) unmarshalOMemberRole2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, v interface{}) (*model.MemberRole, error) {
+func (ec *executionContext) unmarshalOMemberRole2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, v interface{}) (*model.MemberRole, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx, v)
+	res, err := ec.unmarshalOMemberRole2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx, v)
 	return &res, err
 }
 
-func (ec *executionContext) marshalOMemberRole2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, sel ast.SelectionSet, v *model.MemberRole) graphql.Marshaler {
+func (ec *executionContext) marshalOMemberRole2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐMemberRole(ctx context.Context, sel ast.SelectionSet, v *model.MemberRole) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return v
 }
 
-func (ec *executionContext) marshalOScheduledWorkflows2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx context.Context, sel ast.SelectionSet, v model.ScheduledWorkflows) graphql.Marshaler {
+func (ec *executionContext) marshalOScheduledWorkflows2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx context.Context, sel ast.SelectionSet, v model.ScheduledWorkflows) graphql.Marshaler {
 	return ec._ScheduledWorkflows(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOScheduledWorkflows2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋbackendᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx context.Context, sel ast.SelectionSet, v *model.ScheduledWorkflows) graphql.Marshaler {
+func (ec *executionContext) marshalOScheduledWorkflows2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflows(ctx context.Context, sel ast.SelectionSet, v *model.ScheduledWorkflows) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._ScheduledWorkflows(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOScheduledWorkflowsRunDetails2githubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflowsRunDetails(ctx context.Context, sel ast.SelectionSet, v model.ScheduledWorkflowsRunDetails) graphql.Marshaler {
+	return ec._ScheduledWorkflowsRunDetails(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOScheduledWorkflowsRunDetails2ᚖgithubᚗcomᚋlitmuschaosᚋlitmusᚋlitmusᚑportalᚋgraphqlᚑserverᚋgraphᚋmodelᚐScheduledWorkflowsRunDetails(ctx context.Context, sel ast.SelectionSet, v *model.ScheduledWorkflowsRunDetails) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ScheduledWorkflowsRunDetails(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
