@@ -72,25 +72,14 @@ const SideBar: React.FC = () => {
         >
           <HomeIcon />
         </CustomisedListItem>
-        <div data-cy="workflows">
-          <CustomisedListItem
-            key="workflow"
-            handleClick={() => {
-              history.push('/workflows');
-            }}
-            label="Workflows"
-          >
-            <WorkflowsIcon />
-          </CustomisedListItem>
-        </div>
         <CustomisedListItem
-          key="targets"
+          key="workflow"
           handleClick={() => {
-            history.push('/targets');
+            history.push('/workflows');
           }}
-          label="Targets"
+          label="Workflows"
         >
-          <img src="./icons/targets.svg" alt="targets" />
+          <WorkflowsIcon />
         </CustomisedListItem>
         <CustomisedListItem
           key="community"
@@ -102,17 +91,15 @@ const SideBar: React.FC = () => {
           <CommunityIcon />
         </CustomisedListItem>
         {userRole === 'Owner' && (
-          <div data-cy="settings">
-            <CustomisedListItem
-              key="settings"
-              handleClick={() => {
-                history.push('/settings');
-              }}
-              label="Settings"
-            >
-              <SettingsIcon />
-            </CustomisedListItem>
-          </div>
+          <CustomisedListItem
+            key="settings"
+            handleClick={() => {
+              history.push('/settings');
+            }}
+            label="Settings"
+          >
+            <SettingsIcon />
+          </CustomisedListItem>
         )}
       </List>
     </Drawer>

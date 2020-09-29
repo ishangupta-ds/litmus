@@ -36,7 +36,6 @@ const ProjectListItem: React.FC<ProjectListItemProps> = ({
 
   return (
     <ListItem
-      data-cy="project"
       divider={divider}
       onClick={selectProject}
       style={{ backgroundColor: projSelected ? '#109B67' : 'white' }}

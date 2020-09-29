@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { Typography } from '@material-ui/core';
+import { Button, Typography } from '@material-ui/core';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import ButtonFilled from '../../../../components/Button/ButtonFilled';
@@ -102,32 +102,30 @@ const PersonalDetails: React.FC = () => {
         />
 
         <div className={classes.saveButton}>
-          <div data-cy="save">
-            <ButtonFilled
-              isDisabled={!(personaData.fullName.length && !loading)}
-              isPrimary
-              handleClick={() => {
-                setLoading(true);
-                updateDetails({
-                  variables: {
-                    user: {
-                      id: data?.getUser.id,
-                      name: personaData.fullName,
-                      email: personaData.email,
-                    },
+          <ButtonFilled
+            isDisabled={!(personaData.fullName.length && !loading)}
+            isPrimary
+            handleClick={() => {
+              setLoading(true);
+              updateDetails({
+                variables: {
+                  user: {
+                    id: data?.getUser.id,
+                    name: personaData.fullName,
+                    email: personaData.email,
                   },
-                });
-              }}
-            >
-              {loading ? (
-                <div>
-                  <Loader size={20} />
-                </div>
-              ) : (
-                <>Save Changes</>
-              )}
-            </ButtonFilled>
-          </div>
+                },
+              });
+            }}
+          >
+            {loading ? (
+              <div>
+                <Loader size={20} />
+              </div>
+            ) : (
+              <>Save Changes</>
+            )}
+          </ButtonFilled>
           <Unimodal isOpen={open} handleClose={handleClose} hasCloseBtn>
             {error.length ? (
               <div className={classes.errDiv}>
@@ -143,7 +141,7 @@ const PersonalDetails: React.FC = () => {
                     Error: {error}
                   </Typography>
                 </div>
-                <div data-cy="done" className={classes.buttonModal}>
+                <div className={classes.buttonModal}>
                   <ButtonFilled
                     isPrimary
                     isDisabled={false}
@@ -166,15 +164,14 @@ const PersonalDetails: React.FC = () => {
                     Changes took effect
                   </Typography>
                 </div>
-                <div data-cy="done">
-                  <ButtonFilled
-                    isPrimary
-                    isDisabled={false}
-                    handleClick={handleClose}
-                  >
-                    <Typography>Done</Typography>
-                  </ButtonFilled>
-                </div>
+                <Button
+                  data-cy="closeButton"
+                  variant="contained"
+                  className={classes.button}
+                  onClick={handleClose}
+                >
+                  Done
+                </Button>
               </div>
             )}
           </Unimodal>

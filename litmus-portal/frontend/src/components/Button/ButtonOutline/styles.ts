@@ -2,7 +2,9 @@ import { makeStyles } from '@material-ui/core';
 
 const useStyles = makeStyles((theme) => ({
   buttonOutline: {
-    minWidth: '6.875rem',
+    display: 'flex',
+    flexDirection: 'row',
+    minWidth: '4.375rem',
     height: '2.8125rem',
     border: '0.0625rem solid',
     borderColor: theme.palette.secondary.dark,

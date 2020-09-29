@@ -134,7 +134,6 @@ const TableData: React.FC<TableDataProps> = ({ data, deleteRow }) => {
           aria-haspopup="true"
           onClick={handleClick}
           className={classes.optionBtn}
-          data-cy="browseScheduleOptions"
         >
           <MoreVertIcon />
         </IconButton>
@@ -155,7 +154,7 @@ const TableData: React.FC<TableDataProps> = ({ data, deleteRow }) => {
                 alt="Delete Schedule"
                 className={classes.btnImg}
               />
-              <Typography data-cy="deleteSchedule" className={classes.btnText}>
+              <Typography className={classes.btnText}>
                 Delete Schedule
               </Typography>
             </div>

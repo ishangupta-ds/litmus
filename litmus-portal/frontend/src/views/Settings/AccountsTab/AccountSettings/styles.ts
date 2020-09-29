@@ -39,7 +39,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
   },
   innerPass: {
-    marginLeft: theme.spacing(-2),
     display: 'flex',
     flexDirection: 'column',
   },
@@ -95,7 +94,6 @@ const useStyles = makeStyles((theme: Theme) => ({
 
   buttonModal: {
     marginTop: theme.spacing(3.75),
-    width: '55%',
   },
   textSecondError: {
     width: '27.5rem',

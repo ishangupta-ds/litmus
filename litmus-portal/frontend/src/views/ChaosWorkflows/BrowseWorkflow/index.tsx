@@ -258,7 +258,7 @@ const BrowseWorkflow = () => {
       return <></>;
     }
     return (
-      <TableRow data-cy="browseWorkflowData" key={dataRow.workflow_run_id}>
+      <TableRow key={dataRow.workflow_run_id}>
         <TableData data={dataRow} exeData={exe_data} />
       </TableRow>
     );
@@ -285,10 +285,7 @@ const BrowseWorkflow = () => {
         />
       </section>
       <section className="table section">
-        <TableContainer
-          data-cy="browseWorkflowTable"
-          className={classes.tableMain}
-        >
+        <TableContainer className={classes.tableMain}>
           <Table stickyHeader aria-label="simple table">
             <TableHead className={classes.tableHead}>
               <TableRow>
@@ -426,9 +423,7 @@ const BrowseWorkflow = () => {
               {error ? (
                 <TableRow>
                   <TableCell colSpan={7}>
-                    <Typography data-cy="browseWorkflowError" align="center">
-                      Unable to fetch data
-                    </Typography>
+                    <Typography align="center">Unable to fetch data</Typography>
                   </TableCell>
                 </TableRow>
               ) : filteredData && filteredData.length ? (
@@ -442,9 +437,7 @@ const BrowseWorkflow = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={7}>
-                    <Typography data-cy="browseWorkflowNoData" align="center">
-                      No records available
-                    </Typography>
+                    <Typography align="center">No records available</Typography>
                   </TableCell>
                 </TableRow>
               )}

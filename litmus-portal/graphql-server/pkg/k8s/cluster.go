@@ -7,12 +7,12 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/client-go/tools/clientcmd"
-
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func CreateDeployment(namespace, token string) (*appsv1.Deployment, error) {
@@ -46,8 +46,14 @@ func CreateDeployment(namespace, token string) (*appsv1.Deployment, error) {
 				Spec: apiv1.PodSpec{
 					Containers: []apiv1.Container{
 						{
-							Name:            "deployer",
-							Image:           deployerImage,
+							Name:  "deployer",
+							Image: deployerImage,
+							Resources: apiv1.ResourceRequirements{
+								Limits: apiv1.ResourceList{
+									"cpu":    resource.MustParse("50m"),
+									"memory": resource.MustParse("64Mi"),
+								},
+							},
 							ImagePullPolicy: "Always",
 							Env: []apiv1.EnvVar{
 								{
@@ -57,6 +63,14 @@ func CreateDeployment(namespace, token string) (*appsv1.Deployment, error) {
 								{
 									Name:  "TOKEN",
 									Value: token,
+								},
+								{
+									Name: "NAMESPACE",
+									ValueFrom: &apiv1.EnvVarSource{
+										FieldRef: &apiv1.ObjectFieldSelector{
+											FieldPath: "metadata.namespace",
+										},
+									},
 								},
 							},
 						},

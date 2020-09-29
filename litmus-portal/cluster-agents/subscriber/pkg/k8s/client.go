@@ -12,11 +12,20 @@ var KubeConfig *string
 
 //getKubeConfig setup the config for access cluster resource
 func GetKubeConfig() (*rest.Config, error) {
-	// Use in-cluster config if kubeconfig path is not specified
+	// Use in-cluster config if kubeconfig path is specified
 	if *KubeConfig == "" {
-		return rest.InClusterConfig()
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			return config, err
+		}
 	}
-	return clientcmd.BuildConfigFromFlags("", *KubeConfig)
+
+	config, err := clientcmd.BuildConfigFromFlags("", *KubeConfig)
+	if err != nil {
+		return config, err
+	}
+
+	return config, err
 }
 
 func GetGenericK8sClient() (*kubernetes.Clientset, error) {
@@ -25,7 +34,12 @@ func GetGenericK8sClient() (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 
-	return kubernetes.NewForConfig(config)
+	clientSet, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientSet, nil
 }
 
 //This function returns dynamic client and discovery client

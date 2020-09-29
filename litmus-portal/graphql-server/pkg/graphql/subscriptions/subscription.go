@@ -1,6 +1,7 @@
 package subscriptions
 
 import (
+	"os"
 	"github.com/google/uuid"
 	"github.com/litmuschaos/litmus/litmus-portal/graphql-server/graph/model"
 	store "github.com/litmuschaos/litmus/litmus-portal/graphql-server/pkg/data-store"
@@ -37,8 +38,7 @@ func SendWorkflowEvent(wfRun model.WorkflowRun, r store.StateData) {
 }
 
 func SendWorkflowRequest(wfRequest *database.ChaosWorkFlowInput, r store.StateData) {
-
-	namespace := "litmus"
+	namespace := os.Getenv("WORKFLOW_NAMESPACE")
 	requesttype := "create"
 	newAction := &model.ClusterAction{
 		ProjectID: wfRequest.ProjectID,
@@ -48,7 +48,6 @@ func SendWorkflowRequest(wfRequest *database.ChaosWorkFlowInput, r store.StateDa
 			RequestType: &requesttype,
 		},
 	}
-
 	r.Mutex.Lock()
 
 	if observer, ok := r.ConnectedCluster[wfRequest.ClusterID]; ok {

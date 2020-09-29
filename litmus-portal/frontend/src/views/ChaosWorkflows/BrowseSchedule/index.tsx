@@ -186,10 +186,7 @@ const BrowseSchedule = () => {
       </section>
       <section className="table section">
         {/* Table Header */}
-        <TableContainer
-          data-cy="browseScheduleTable"
-          className={classes.tableMain}
-        >
+        <TableContainer className={classes.tableMain}>
           <Table stickyHeader aria-label="simple table">
             <TableHead>
               <TableRow className={classes.tableHead}>
@@ -299,7 +296,7 @@ const BrowseSchedule = () => {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell data-cy="browseScheduleError" colSpan={7}>
+                  <TableCell colSpan={7}>
                     <Typography align="center">Unable to fetch data</Typography>
                   </TableCell>
                 </TableRow>
@@ -311,16 +308,13 @@ const BrowseSchedule = () => {
                       paginationData.rowsPerPage
                   )
                   .map((data: ScheduleWorkflow) => (
-                    <TableRow
-                      data-cy="browseScheduleData"
-                      key={data.workflow_id}
-                    >
+                    <TableRow key={data.workflow_id}>
                       <TableData data={data} deleteRow={deleteRow} />
                     </TableRow>
                   ))
               ) : (
                 <TableRow>
-                  <TableCell data-cy="browseScheduleNoData" colSpan={7}>
+                  <TableCell colSpan={7}>
                     <Typography align="center">No records available</Typography>
                   </TableCell>
                 </TableRow>

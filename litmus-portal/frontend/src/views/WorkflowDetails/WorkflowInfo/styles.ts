@@ -2,7 +2,8 @@ import { makeStyles, Theme } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme: Theme) => ({
   root: {
-    width: '100%',
+    width: '25%',
+    padding: '1rem 2rem',
     marginTop: '1rem',
   },
   header: {

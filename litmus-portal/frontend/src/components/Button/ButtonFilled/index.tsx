@@ -9,7 +9,6 @@ interface ButtonFilledProps {
   children: React.ReactNode;
   isPrimary: boolean;
   isDisabled?: boolean;
-  styles?: Object;
   type?: any;
 }
 const ButtonFilled: React.FC<ButtonFilledProps> = ({
@@ -17,13 +16,11 @@ const ButtonFilled: React.FC<ButtonFilledProps> = ({
   children,
   isPrimary,
   isDisabled,
-  styles,
   type,
 }) => {
   const classes = useStyles();
   return (
     <Button
-      style={styles}
       variant="contained"
       size="medium"
       disabled={isDisabled}

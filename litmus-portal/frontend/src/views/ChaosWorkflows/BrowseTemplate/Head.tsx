@@ -15,7 +15,7 @@ const Head: React.FC<HeadProps> = ({ image, title, details }) => {
     <div className={classes.flexRow}>
       <img src={image} alt="workflowIcon" className={classes.bgIcon} />
       <div className={classes.body}>
-        <Typography data-cy="expName" className={classes.headerText}>
+        <Typography className={classes.headerText}>
           {/* Converting 'some-experiment' to 'Some Experiment' using capitalize utility */}
           {title?.split('-').map((text) => `${capitalize(text)} `)}
         </Typography>
