@@ -4,6 +4,7 @@ import AccordionSummary from '@material-ui/core/AccordionSummary';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import React from 'react';
 import { PanelResponse } from '../../../models/graphql/dashboardsDetails';
+import { PrometheusResponse } from '../../../models/graphql/prometheus';
 import GraphPanel from './GraphPanel';
 import useStyles, { Accordion } from './styles';
 
@@ -11,12 +12,16 @@ interface DashboardPanelGroupContentProps {
   panels: PanelResponse[];
   panel_group_name: string;
   panel_group_id: string;
+  promData: PrometheusResponse | undefined;
+  chaosEventQueries: string[];
 }
 
 const DashboardPanelGroupContent: React.FC<DashboardPanelGroupContentProps> = ({
   panels,
   panel_group_id,
   panel_group_name,
+  promData,
+  chaosEventQueries,
 }) => {
   const classes = useStyles();
   const [open, setOpen] = React.useState<boolean>(true);
@@ -55,6 +60,8 @@ const DashboardPanelGroupContent: React.FC<DashboardPanelGroupContentProps> = ({
                     y_axis_right={panel.y_axis_right}
                     x_axis_down={panel.x_axis_down}
                     unit={panel.unit}
+                    promData={promData}
+                    chaosEventQueries={chaosEventQueries}
                   />
                 </div>
               ))}

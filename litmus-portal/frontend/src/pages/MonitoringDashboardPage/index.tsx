@@ -8,18 +8,26 @@ import { useSelector } from 'react-redux';
 import BackButton from '../../components/Button/BackButton';
 import Loader from '../../components/Loader';
 import Scaffold from '../../containers/layouts/Scaffold';
-import { LIST_DASHBOARD, LIST_DATASOURCE } from '../../graphql';
+import { LIST_DASHBOARD, LIST_DATASOURCE, PROM_QUERY } from '../../graphql';
 import {
   DashboardList,
   ListDashboardResponse,
   ListDashboardVars,
   PanelGroupResponse,
+  PanelResponse,
+  PromQuery,
 } from '../../models/graphql/dashboardsDetails';
 import {
   DataSourceList,
   ListDataSourceResponse,
   ListDataSourceVars,
 } from '../../models/graphql/dataSourceDetails';
+import {
+  PrometheusQueryInput,
+  PrometheusQueryVars,
+  PrometheusResponse,
+  promQueryInput,
+} from '../../models/graphql/prometheus';
 import useActions from '../../redux/actions';
 import * as DashboardActions from '../../redux/actions/dashboards';
 import * as DataSourceActions from '../../redux/actions/dataSource';
@@ -38,6 +46,11 @@ interface SelectedDashboardInformation {
   dashboardListForAgent: ListDashboardResponse[];
   metaData: ListDashboardResponse[];
   dashboardKey: string;
+}
+
+interface PrometheusQueryDataInterface {
+  promInput: PrometheusQueryInput;
+  chaosInput: string[];
 }
 
 const DashboardPage: React.FC = () => {
@@ -158,12 +171,92 @@ const DashboardPage: React.FC = () => {
           setDataSourceStatus(selectedDataSource.health_status);
         }
       }
-      setLoader(true);
-      setTimeout(() => {
-        setLoader(false);
-      }, 4500);
+      // setLoader(true);
+      // setTimeout(() => {
+      generatePrometheusQueryData();
+      //   setLoader(false);
+      // }, 4500);
     }
   }, [selectedDashboardInformation.dashboardKey, dataSources]);
+
+  const [
+    prometheusQueryData,
+    setPrometheusQueryData,
+  ] = React.useState<PrometheusQueryDataInterface>({
+    promInput: {
+      url: '',
+      start: '',
+      end: '',
+      queries: [],
+    },
+    chaosInput: [],
+  });
+
+  const [updateQueries, setUpdateQueries] = React.useState<boolean>(false);
+
+  const [firstLoad, setFirstLoad] = React.useState<boolean>(true);
+
+  // Apollo query to get the prometheus data
+  const { data: prometheusData, error } = useQuery<
+    PrometheusResponse,
+    PrometheusQueryVars
+  >(PROM_QUERY, {
+    variables: { prometheusInput: prometheusQueryData.promInput },
+    fetchPolicy: 'cache-and-network',
+    pollInterval: selectedDashboard.refreshRate,
+  });
+
+  const generatePrometheusQueryData = () => {
+    const promQueries: promQueryInput[] = [];
+    const chaosQueries: string[] = [];
+    if (selectedDashboardInformation.metaData[0]) {
+      selectedDashboardInformation.metaData[0].panel_groups.map(
+        (panelGroup: PanelGroupResponse) => {
+          panelGroup.panels.map((panel: PanelResponse) => {
+            panel.prom_queries.forEach((query: PromQuery) => {
+              if (
+                query.prom_query_name.startsWith(
+                  'litmuschaos_awaited_experiments'
+                )
+              ) {
+                chaosQueries.push(query.queryid);
+              }
+              promQueries.push({
+                queryid: query.queryid,
+                query: query.prom_query_name,
+                legend: query.legend,
+                resolution: query.resolution,
+                minstep: parseInt(query.minstep, 10),
+              });
+            });
+          });
+        }
+      );
+      const prometheusQueryInput: PrometheusQueryInput = {
+        url: selectedDataSource.selectedDataSourceURL,
+        start: `${Math.round(new Date().getTime() / 1000) - 1800}`,
+        end: `${Math.round(new Date().getTime() / 1000)}`,
+        queries: promQueries,
+      };
+      setPrometheusQueryData({
+        promInput: prometheusQueryInput,
+        chaosInput: chaosQueries,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (firstLoad === true && updateQueries === false) {
+      generatePrometheusQueryData();
+      setFirstLoad(false);
+      setUpdateQueries(true);
+    }
+    if (updateQueries === true && firstLoad === false) {
+      setTimeout(() => {
+        generatePrometheusQueryData();
+      }, selectedDashboard.refreshRate);
+    }
+  }, [dataSourceStatus, prometheusQueryData]);
 
   return (
     <Scaffold>
@@ -243,7 +336,7 @@ const DashboardPage: React.FC = () => {
               {selectedDashboardInformation.type}
             </Typography>
           </div>
-          {loader ? (
+          {error ? (
             <div className={`${classes.analyticsDiv} ${classes.loader}`}>
               <Typography
                 variant="h5"
@@ -270,6 +363,8 @@ const DashboardPage: React.FC = () => {
                         panel_group_id={panelGroup.panel_group_id}
                         panel_group_name={panelGroup.panel_group_name}
                         panels={panelGroup.panels}
+                        promData={prometheusData}
+                        chaosEventQueries={prometheusQueryData.chaosInput}
                       />
                     </div>
                   )

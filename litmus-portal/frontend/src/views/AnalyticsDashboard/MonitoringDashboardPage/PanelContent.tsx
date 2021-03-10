@@ -1,28 +1,34 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useQuery } from '@apollo/client';
 import { Typography } from '@material-ui/core';
 import useTheme from '@material-ui/core/styles/useTheme';
 import { DateValue, GraphMetric, LineAreaGraph } from 'litmus-ui';
-import React, { useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import Loader from '../../../components/Loader';
-import { PROM_QUERY } from '../../../graphql';
+import React from 'react';
 import {
-  PanelResponse,
+  PanelOption,
   PromQuery,
 } from '../../../models/graphql/dashboardsDetails';
 import {
   PrometheusQueryInput,
-  PrometheusQueryVars,
   PrometheusResponse,
-  promQueryInput,
 } from '../../../models/graphql/prometheus';
-import { RootState } from '../../../redux/reducers';
 import useStyles from './styles';
 
 interface PrometheusQueryDataInterface {
   promInput: PrometheusQueryInput;
   chaosInput: string[];
+}
+
+interface PContent {
+  panel_id: string;
+  prom_queries: PromQuery[];
+  panel_options: PanelOption;
+  panel_name: string;
+  y_axis_left: string;
+  y_axis_right: string;
+  x_axis_down: string;
+  unit: string;
+  promData: PrometheusResponse | undefined;
+  chaosEventQueries: string[];
 }
 
 const filterUndefinedData = (data: GraphMetric[]): GraphMetric[] =>
@@ -39,7 +45,7 @@ const filterUndefinedData = (data: GraphMetric[]): GraphMetric[] =>
           )
         )
     : data;
-const PanelContent: React.FC<PanelResponse> = ({
+const PanelContent: React.FC<PContent> = ({
   panel_id,
   panel_name,
   panel_options,
@@ -48,6 +54,8 @@ const PanelContent: React.FC<PanelResponse> = ({
   y_axis_right,
   x_axis_down,
   unit,
+  promData,
+  chaosEventQueries,
 }) => {
   const { palette } = useTheme();
   const classes = useStyles();
@@ -55,134 +63,123 @@ const PanelContent: React.FC<PanelResponse> = ({
     typeof elem === 'string' ? elem : palette.graph.dashboard.lightBlue
   );
 
-  const [
-    prometheusQueryData,
-    setPrometheusQueryData,
-  ] = React.useState<PrometheusQueryDataInterface>({
-    promInput: {
-      url: '',
-      start: '',
-      end: '',
-      queries: [],
-    },
-    chaosInput: [],
-  });
+  // const [
+  //   prometheusQueryData,
+  //   setPrometheusQueryData,
+  // ] = React.useState<PrometheusQueryDataInterface>({
+  //   promInput: {
+  //     url: '',
+  //     start: '',
+  //     end: '',
+  //     queries: [],
+  //   },
+  //   chaosInput: [],
+  // });
 
-  const [updateQueries, setUpdateQueries] = React.useState<boolean>(false);
+  // const [updateQueries, setUpdateQueries] = React.useState<boolean>(false);
 
-  const [firstLoad, setFirstLoad] = React.useState<boolean>(true);
+  // const [firstLoad, setFirstLoad] = React.useState<boolean>(true);
 
-  const selectedDashboard = useSelector(
-    (state: RootState) => state.selectDashboard
-  );
+  // const selectedDashboard = useSelector(
+  //   (state: RootState) => state.selectDashboard
+  // );
 
-  const selectedDataSource = useSelector(
-    (state: RootState) => state.selectDataSource
-  );
+  // const selectedDataSource = useSelector(
+  //   (state: RootState) => state.selectDataSource
+  // );
 
-  // Apollo query to get the prometheus data
-  const { data: prometheusData, error } = useQuery<
-    PrometheusResponse,
-    PrometheusQueryVars
-  >(PROM_QUERY, {
-    variables: { prometheusInput: prometheusQueryData.promInput },
-    // fetchPolicy: 'cache-and-network',
-    pollInterval: selectedDashboard.refreshRate,
-  });
+  // // Apollo query to get the prometheus data
+  // const { data: prometheusData, error } = useQuery<
+  //   PrometheusResponse,
+  //   PrometheusQueryVars
+  // >(PROM_QUERY, {
+  //   variables: { prometheusInput: prometheusQueryData.promInput },
+  //   fetchPolicy: 'cache-and-network',
+  //   pollInterval: selectedDashboard.refreshRate,
+  // });
 
-  const generatePrometheusQueryData = () => {
-    const promQueries: promQueryInput[] = [];
-    const chaosQueries: string[] = [];
-    prom_queries.forEach((query: PromQuery) => {
-      if (query.prom_query_name.startsWith('litmuschaos_awaited_experiments')) {
-        chaosQueries.push(query.queryid);
-      }
-      promQueries.push({
-        queryid: query.queryid,
-        query: query.prom_query_name,
-        legend: query.legend,
-        resolution: query.resolution,
-        minstep: parseInt(query.minstep, 10),
-      });
-    });
-    const prometheusQueryInput: PrometheusQueryInput = {
-      url: selectedDataSource.selectedDataSourceURL,
-      start: `${Math.round(new Date().getTime() / 1000) - 1800}`,
-      end: `${Math.round(new Date().getTime() / 1000)}`,
-      queries: promQueries,
-    };
-    setPrometheusQueryData({
-      promInput: prometheusQueryInput,
-      chaosInput: chaosQueries,
-    });
-  };
+  // const generatePrometheusQueryData = () => {
+  //   const promQueries: promQueryInput[] = [];
+  //   const chaosQueries: string[] = [];
+  //   prom_queries.forEach((query: PromQuery) => {
+  //     if (query.prom_query_name.startsWith('litmuschaos_awaited_experiments')) {
+  //       chaosQueries.push(query.queryid);
+  //     }
+  //     promQueries.push({
+  //       queryid: query.queryid,
+  //       query: query.prom_query_name,
+  //       legend: query.legend,
+  //       resolution: query.resolution,
+  //       minstep: parseInt(query.minstep, 10),
+  //     });
+  //   });
+  //   const prometheusQueryInput: PrometheusQueryInput = {
+  //     url: selectedDataSource.selectedDataSourceURL,
+  //     start: `${Math.round(new Date().getTime() / 1000) - 1800}`,
+  //     end: `${Math.round(new Date().getTime() / 1000)}`,
+  //     queries: promQueries,
+  //   };
+  //   setPrometheusQueryData({
+  //     promInput: prometheusQueryInput,
+  //     chaosInput: chaosQueries,
+  //   });
+  // };
 
-  useEffect(() => {
-    if (firstLoad === true && updateQueries === false) {
-      generatePrometheusQueryData();
-      setFirstLoad(false);
-      setUpdateQueries(true);
-    }
-    if (updateQueries === true && firstLoad === false) {
-      setTimeout(() => {
-        generatePrometheusQueryData();
-      }, selectedDashboard.refreshRate);
-    }
-  }, [prometheusQueryData]);
+  // useEffect(() => {
+  //   if (firstLoad === true && updateQueries === false) {
+  //     generatePrometheusQueryData();
+  //     setFirstLoad(false);
+  //     setUpdateQueries(true);
+  //   }
+  //   if (updateQueries === true && firstLoad === false) {
+  //     setTimeout(() => {
+  //       generatePrometheusQueryData();
+  //     }, selectedDashboard.refreshRate);
+  //   }
+  // }, [prometheusQueryData]);
 
   let seriesData: Array<GraphMetric> = [
     { metricName: '', data: [{ date: NaN, value: NaN }] },
   ];
-  if (
-    prometheusData &&
-    prometheusData.GetPromQuery.length &&
-    prometheusData.GetPromQuery[0].legends?.length &&
-    prometheusData.GetPromQuery[0].legends !== null &&
-    prometheusData.GetPromQuery[0].legends[0] !== null
-  ) {
-    seriesData = prometheusData.GetPromQuery[0].legends.map((elem, index) => ({
-      metricName: elem[0] ?? 'test',
-      data: prometheusData.GetPromQuery[0].tsvs[index].map((dataPoint) => ({
-        date: parseInt(dataPoint.timestamp ?? '0', 10) * 1000,
-        value: parseFloat(dataPoint.value ?? '0.0'),
-      })),
-      baseColor: lineGraph[index % lineGraph.length],
-    }));
-  }
-
   let eventData: Array<GraphMetric> = [
     { metricName: '', data: [{ date: NaN, value: NaN }] },
   ];
   if (
-    prometheusData &&
-    prometheusData.GetPromQuery.length &&
-    prometheusData.GetPromQuery[0].legends?.length &&
-    prometheusData.GetPromQuery[0].legends !== null &&
-    prometheusData.GetPromQuery[0].legends[0] !== null
+    promData &&
+    promData.GetPromQuery.length &&
+    promData.GetPromQuery[0].legends?.length &&
+    promData.GetPromQuery[0].legends !== null &&
+    promData.GetPromQuery[0].legends[0] !== null
   ) {
-    prometheusData.GetPromQuery.forEach((queryResponse) => {
-      if (prometheusQueryData.chaosInput.includes(queryResponse.queryid)) {
+    let seriesDataStore: GraphMetric[] = promData.GetPromQuery[0].legends.map(
+      (elem, index) => ({
+        metricName: elem[0] ?? 'test',
+        data: promData.GetPromQuery[0].tsvs[index].map((dataPoint) => ({
+          date: parseInt(dataPoint.timestamp ?? '0', 10) * 1000,
+          value: parseFloat(dataPoint.value ?? '0.0'),
+        })),
+        baseColor: lineGraph[index % lineGraph.length],
+      })
+    );
+    seriesData = seriesDataStore;
+
+    promData.GetPromQuery.forEach((queryResponse) => {
+      if (chaosEventQueries.includes(queryResponse.queryid)) {
         if (queryResponse.legends && queryResponse.legends[0]) {
-          eventData = queryResponse.legends.map((elem, index) => ({
-            metricName: elem[0] ?? 'test',
-            data: queryResponse.tsvs[index].map((dataPoint) => ({
-              date: parseInt(dataPoint.timestamp ?? '0', 10) * 1000,
-              value: parseFloat(dataPoint.value ?? '0.0'),
-            })),
-            baseColor: 'red',
-          }));
+          let eventDataStore: GraphMetric[] = queryResponse.legends.map(
+            (elem, index) => ({
+              metricName: elem[0] ?? 'test',
+              data: queryResponse.tsvs[index].map((dataPoint) => ({
+                date: parseInt(dataPoint.timestamp ?? '0', 10) * 1000,
+                value: parseFloat(dataPoint.value ?? '0.0'),
+              })),
+              baseColor: 'red',
+            })
+          );
+          eventData = eventDataStore;
         }
       }
     });
-  }
-
-  if (error) {
-    return (
-      <div className={classes.rootPanel}>
-        <Typography>{panel_name}</Typography>
-        <Loader />
-      </div>
-    );
   }
 
   return (
