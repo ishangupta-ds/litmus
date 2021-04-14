@@ -778,6 +778,7 @@ const WorkflowComparisonTable = () => {
                               tabIndex={-1}
                               key={data.workflow_id}
                               selected={isItemSelected}
+                              classes={{ selected: classes.tableRowSelected }}
                             >
                               <TableData
                                 data={data}
