@@ -32,10 +32,11 @@ import * as WorkflowActions from '../../../redux/actions/workflow';
 import { RootState } from '../../../redux/reducers';
 import capitalize from '../../../utils/capitalize';
 import { getProjectID } from '../../../utils/getSearchParams';
-import { updateEngineName } from '../../../utils/yamlUtils';
+import { updateEngineName, updateNamespace } from '../../../utils/yamlUtils';
 import AddExperimentModal from './AddExperimentModal';
 import useStyles from './styles';
 import WorkflowPreview from './WorkflowPreview';
+import WorkflowSequence from './WorkflowSequence';
 import WorkflowTable from './WorkflowTable';
 
 interface WorkflowProps {
@@ -47,6 +48,15 @@ interface WorkflowProps {
 interface WorkflowExperiment {
   ChaosEngine: string;
   Experiment: string;
+}
+
+interface ManifestSteps {
+  name: string;
+  template: string;
+}
+
+interface StepType {
+  [key: string]: ManifestSteps[];
 }
 
 interface ChartName {
@@ -79,6 +89,8 @@ const TuneWorkflow = forwardRef((_, ref) => {
   const [editManifest, setEditManifest] = useState('');
   const [confirmEdit, setConfirmEdit] = useState(false);
   const [yamlValid, setYamlValid] = useState(true);
+  const [editSequence, setEditSequence] = useState(false);
+  const [steps, setSteps] = useState<StepType>({});
   const [workflow, setWorkflow] = useState<WorkflowProps>({
     name: '',
     crd: '',
@@ -87,6 +99,7 @@ const TuneWorkflow = forwardRef((_, ref) => {
   const { manifest, isCustomWorkflow } = useSelector(
     (state: RootState) => state.workflowManifest
   );
+  const { namespace } = useSelector((state: RootState) => state.workflowData);
 
   const [YAMLModal, setYAMLModal] = useState<boolean>(false);
 
@@ -124,8 +137,9 @@ const TuneWorkflow = forwardRef((_, ref) => {
     onCompleted: (data) => {
       const parsedYAML = YAML.parse(data.GetTemplateManifestByID.manifest);
       const wfmanifest = updateEngineName(YAML.parse(parsedYAML));
+      const updatedManifest = updateNamespace(wfmanifest, namespace);
       workflowAction.setWorkflowManifest({
-        manifest: wfmanifest,
+        manifest: YAML.stringify(updatedManifest),
       });
     },
   });
@@ -151,14 +165,14 @@ const TuneWorkflow = forwardRef((_, ref) => {
     kind: 'Workflow',
     metadata: {
       name: `${workflow.name}-${Math.round(new Date().getTime() / 1000)}`,
-      namespace: `litmus`,
+      namespace,
     },
     spec: {
       arguments: {
         parameters: [
           {
             name: 'adminModeNamespace',
-            value: `litmus`,
+            value: namespace,
           },
         ],
       },
@@ -210,8 +224,9 @@ const TuneWorkflow = forwardRef((_, ref) => {
       .then((data) => {
         data.text().then((yamlText) => {
           const wfmanifest = updateEngineName(YAML.parse(yamlText));
+          const updatedManifest = updateNamespace(wfmanifest, namespace);
           workflowAction.setWorkflowManifest({
-            manifest: wfmanifest,
+            manifest: YAML.stringify(updatedManifest),
           });
         });
       })
@@ -416,9 +431,12 @@ const TuneWorkflow = forwardRef((_, ref) => {
    */
   useEffect(() => {
     if (isCustomWorkflow) {
-      setGeneratedYAML(updateCRD(generatedYAML, experiment));
+      const savedManifest =
+        manifest !== '' ? YAML.parse(manifest) : generatedYAML;
+      const updatedManifest = updateCRD(savedManifest, experiment);
+      setGeneratedYAML(updatedManifest);
       workflowAction.setWorkflowManifest({
-        manifest: YAML.stringify(generatedYAML),
+        manifest: YAML.stringify(updatedManifest),
       });
     }
   }, [experiment]);
@@ -448,7 +466,7 @@ const TuneWorkflow = forwardRef((_, ref) => {
   }, [engineDataLoading, experimentDataLoading]);
 
   function onNext() {
-    if (isCustomWorkflow && childRef.current) {
+    if (childRef.current) {
       if ((childRef.current.onNext() as unknown) === false) {
         alert.changeAlertState(true); // Custom Workflow has no experiments
         return false;
@@ -456,6 +474,10 @@ const TuneWorkflow = forwardRef((_, ref) => {
     }
     return true;
   }
+
+  const handleSteps = (steps: any) => {
+    setSteps(steps);
+  };
 
   useImperativeHandle(ref, () => ({
     onNext,
@@ -606,11 +628,57 @@ const TuneWorkflow = forwardRef((_, ref) => {
       {/* Experiment Details */}
       <div className={classes.experimentWrapper}>
         {/* Edit Button */}
-        <ButtonOutlined>
-          <img src="./icons/editsequence.svg" alt="Edit Sequence" />{' '}
-          <Width width="0.5rem" />
-          {t('createWorkflow.tuneWorkflow.editSequence')}
-        </ButtonOutlined>
+        {manifest !== '' && (
+          <ButtonOutlined onClick={() => setEditSequence(true)}>
+            <img src="./icons/editsequence.svg" alt="Edit Sequence" />{' '}
+            <Width width="0.5rem" />
+            {t('createWorkflow.tuneWorkflow.editSequence')}
+          </ButtonOutlined>
+        )}
+        <Modal
+          open={editSequence}
+          onClose={() => {
+            setEditSequence(false);
+          }}
+          width="60%"
+          modalActions={
+            <ButtonOutlined
+              onClick={() => {
+                setEditSequence(false);
+              }}
+              className={classes.closeBtn}
+            >
+              <img src="./icons/cross-disabled.svg" alt="cross" />
+            </ButtonOutlined>
+          }
+        >
+          <div className={classes.sequenceMainDiv}>
+            <div className={classes.sequenceDiv}>
+              <Typography variant="h4">
+                {t('createWorkflow.tuneWorkflow.editSequence')}
+              </Typography>
+              <Typography className={classes.dropText}>
+                {t('createWorkflow.tuneWorkflow.dragndrop')}
+              </Typography>
+            </div>
+            <Row>
+              <Width width="40%">
+                <WorkflowPreview
+                  SequenceSteps={steps}
+                  isCustomWorkflow={isCustomWorkflow}
+                />
+              </Width>
+              <Width width="60%">
+                <WorkflowSequence
+                  getSteps={handleSteps}
+                  handleSequenceModal={(sequenceState: boolean) => {
+                    setEditSequence(sequenceState);
+                  }}
+                />
+              </Width>
+            </Row>
+          </div>
+        </Modal>
         {/* Details Section -> Graph on the Left and Table on the Right */}
         <Row>
           {/* Argo Workflow Graph */}

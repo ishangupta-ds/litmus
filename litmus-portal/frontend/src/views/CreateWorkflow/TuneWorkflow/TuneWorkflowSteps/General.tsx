@@ -13,9 +13,10 @@ import { RootState } from '../../../../redux/reducers';
 
 interface GeneralProps {
   gotoStep: (page: number) => void;
+  isCustom: boolean | undefined;
 }
 
-const General: React.FC<GeneralProps> = ({ gotoStep }) => {
+const General: React.FC<GeneralProps> = ({ gotoStep, isCustom }) => {
   const { t } = useTranslation();
   const classes = useStyles();
   const [hubName, setHubName] = React.useState<string>('');
@@ -23,8 +24,18 @@ const General: React.FC<GeneralProps> = ({ gotoStep }) => {
   const engine = useSelector(
     (state: RootState) => state.workflowManifest.engineYAML
   );
+  const namespace = useSelector(
+    (state: RootState) => state.workflowData.namespace
+  );
+  const engineYAML = YAML.parse(engine);
   const [experimentName, setExperimentName] = React.useState<string>(
-    YAML.parse(engine).metadata.name
+    engineYAML.metadata.name
+  );
+  const [context, setContext] = React.useState<string>(
+    engineYAML.metadata.labels !== undefined &&
+      engineYAML.metadata.labels.context !== undefined
+      ? engineYAML.metadata.labels.context
+      : `${namespace}-${experimentName}`
   );
   useEffect(() => {
     localforage.getItem('selectedScheduleOption').then((value) => {
@@ -39,6 +50,9 @@ const General: React.FC<GeneralProps> = ({ gotoStep }) => {
   const handleNext = () => {
     const parsedYAML = YAML.parse(engine);
     parsedYAML.metadata.name = experimentName;
+    parsedYAML.metadata['labels'] = {
+      context,
+    };
     workflow.setWorkflowManifest({
       engineYAML: YAML.stringify(parsedYAML),
     });
@@ -52,19 +66,35 @@ const General: React.FC<GeneralProps> = ({ gotoStep }) => {
       </Typography>
       <br />
       <div className={classes.generalContainer}>
+        {isCustom && (
+          <>
+            {hubName.length > 0 && (
+              <>
+                <InputField
+                  label="Hub"
+                  value={hubName}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+                <br />
+              </>
+            )}
+            <InputField
+              label="Experiment Name"
+              value={experimentName}
+              onChange={(e) => {
+                setExperimentName(e.target.value);
+              }}
+            />
+            <br />
+          </>
+        )}
         <InputField
-          label="Hub"
-          value={hubName}
-          InputProps={{
-            readOnly: true,
-          }}
-        />
-        <br />
-        <InputField
-          label="Experiment Name"
-          value={experimentName}
+          label="Context"
+          value={context}
           onChange={(e) => {
-            setExperimentName(e.target.value);
+            setContext(e.target.value);
           }}
         />
       </div>
