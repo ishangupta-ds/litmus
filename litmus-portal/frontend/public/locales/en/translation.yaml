@@ -74,6 +74,7 @@ workflowStepper:
   workflowBtn: Go to Workflow
   step1:
     errorSnackbar: You haven't selected any Target Agent
+    errorSnackbarViewer: You cannot schedule a workflow as a Viewer
   step2:
     errorSnackbar: Please select a workflow type
   step3:
@@ -490,14 +491,12 @@ settings:
       joined: Joined to team
       status: Status
     deleteModal:
-      header: Are you sure you want to remove the invitation to
-      text: the current user?
+      header: Are you sure you want to revoke the invitation to
       body: The user will lose access to the team’s work.
       yesButton: Yes
       noButton: No
     deleteUser:
-      header: Are you sure
-      text: to remove the current user?
+      header: Are you sure you want to remove
       body: The user will lose access to the team’s work
       yesButton: Yes
       noButton: No
@@ -720,6 +719,7 @@ createWorkflow:
     label:
       workflowName: Workflow name
       desc: Description
+      namespace: Namespace
     button:
       edit: Edit workflow name
       cancel: Cancel
@@ -785,6 +785,7 @@ createWorkflow:
     selectExp: Select An Experiment
     done: Done
     editSequence: Edit Sequence
+    dragndrop: Drag and drop an experiment as per your desire for scheduling
     addANewExperiment: Add a new experiment
     confirmText: Are you sure you want to continue without saving?
     back: Back
@@ -792,7 +793,7 @@ createWorkflow:
     updateChanges: Update changes in the workflow manifest
     saveChange: Save Changes
     verticalStepper:
-      myHubInfo: MyHub and Experiment details
+      myHubInfo: Experiment details
       annotationInfo: Provide target application details where you want to induce the chaos.
       annotation: Annotation Check
       true: 'True'
@@ -806,6 +807,22 @@ createWorkflow:
       rollout: Rollout
       nodeselector: NodeSelector
       selector: 'kubernetes.io/hostname :'
+      nsError: Namespace not available
+      labelError: Label not available in the resource or namespace
+      deleteExp: Delete the experiment
+      editExp: Edit the experiment
+    steadyState:
+      name: Probe Name
+      type: Type
+      mode: Mode
+      details: Probe Details
+      properties: Properties
+      showDetails: Show Details
+      showProp: Show Properties
+      addProbe: Please add probes to see the data
+      addNewProbe: '+ Add a new Probe'
+      back: Back
+      finish: Finish
     addProbe:
       heading: Add
       headingStrong: Probe
@@ -833,6 +850,7 @@ createWorkflow:
         contentType: Content Type
         criteria: Criteria
         responseCode: Response Code
+        responseTimeout: Response Timeout
         command: Command
         source: Source
         comparator: Comparator
@@ -871,6 +889,8 @@ createWorkflow:
       viewYaml: View YAML
     summary:
       header: Summary
+      subjectDesc: The subject is used as a chaos workflow label. It’s value will be used for analysing chaos results and metrics. This subject will be also used to filter out chaos events in monitoring dashboards.
+      subject: Subject
       workflowName: Workflow name
       desc: Description
       schedule: Schedule
@@ -1119,3 +1139,7 @@ customWorkflow:
     addExp: Add experiment
   viewYAML:
     view: View the YAML here
+  sequence:
+    dragexp: Drag the selected experiment between the rows or to the end of rows to make it sequential experiment or drag into the rows to make it parallel experiment.
+    saveChanges: Save changes
+    discard: Discard changes

@@ -61,6 +61,7 @@ const useStyles = makeStyles((theme) => ({
   // Modal
   closeButton: {
     borderColor: theme.palette.border.main,
+    marginTop: theme.spacing(-3.75),
   },
 
   modal: {
@@ -97,6 +98,21 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(5),
     display: 'flex',
     flexDirection: 'column',
+
+    '& ::-webkit-scrollbar': {
+      width: '0.4rem',
+    },
+    '& ::-webkit-scrollbar-track': {
+      marginTop: theme.spacing(1),
+      webkitBoxShadow: `inset 0 0 8px ${theme.palette.common.black}`,
+    },
+    '& ::-webkit-scrollbar-thumb': {
+      backgroundColor: theme.palette.primary.light,
+      borderRadius: 8,
+    },
+    '& img': {
+      userDrag: 'none',
+    },
   },
   doneBtn: {
     marginLeft: 'auto',
@@ -147,6 +163,38 @@ const useStyles = makeStyles((theme) => ({
     fontSize: '1.6rem',
     marginBottom: theme.spacing(3.75),
     textAlign: 'left',
+  },
+
+  // Sequence Modal
+  sequenceMainDiv: {
+    padding: theme.spacing(7.5),
+  },
+  sequenceDiv: {
+    textAlign: 'left',
+    marginBottom: theme.spacing(6.25),
+  },
+  dropText: {
+    fontSize: '1.2rem',
+  },
+  radioList: {
+    width: '100%',
+    alignItems: 'center',
+    height: '28rem',
+    overflowY: 'auto',
+  },
+  experimentCard: {
+    backgroundColor: theme.palette.cards.background,
+    lineHeight: '5rem', // Making the div content vertically aligned
+    padding: theme.spacing(0, 5),
+    margin: theme.spacing(1, 0),
+    width: '40rem',
+    display: 'flex',
+    [theme.breakpoints.up('lg')]: {
+      width: '60rem',
+    },
+  },
+  experimentName: {
+    fontSize: '1rem',
   },
 }));
 
